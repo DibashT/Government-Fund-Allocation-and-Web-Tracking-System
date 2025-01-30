@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add User</title>
+  <style>
+    /* Optional: Add some basic styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    form {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Add User</h1>
+  <form action="/add-user" method="POST">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required />
+  
+    <label for="role">Role:</label>
+    <select id="role" name="role" required>
+      <option value="" disabled selected>Select a role</option>
+      <option value="Minister">Minister</option>
+      <option value="Government Official">Government Official</option>
+      <option value="Public">Public</option>
+    </select>
+  
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required />
+  
+    <button type="submit">Add User</button>
+  </form>
+</body>
+</html>

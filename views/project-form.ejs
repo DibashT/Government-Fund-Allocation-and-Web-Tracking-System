@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <%- include('layout') %> <!-- This includes the layout template -->
+
+<% title = "Project Form - Government Fund Allocation" %> <!-- Set the title for this page -->
+
+<div class="form-container">
+    <h1>Project Form</h1>
+    <form action="/submit-project" method="POST">
+        <!-- Project Name -->
+        <div class="form-group">
+            <label for="project-name">Project Name</label>
+            <input type="text" id="project-name" name="projectName" placeholder="Enter project name" required>
+        </div>
+
+        <!-- Allocated Fund -->
+        <div class="form-group">
+            <label for="allocated-fund">Allocated Fund</label>
+            <input type="number" id="allocated-fund" name="allocatedFund" placeholder="Enter allocated fund" required>
+        </div>
+
+        <!-- Department Selection -->
+        <div class="form-group">
+            <label for="department">Department</label>
+            <select id="department" name="department" required>
+                <option value="">Select Department</option>
+                <option value="education">Ministry of Education</option>
+                <option value="health">Ministry of Health</option>
+                <option value="transport">Ministry of Transport</option>
+                <option value="agriculture">Ministry of Agriculture</option>
+                <option value="finance">Ministry of Finance</option>
+            </select>
+        </div>
+
+        <!-- Start Date -->
+        <div class="form-group">
+            <label for="start-date">Start Date</label>
+            <input type="date" id="start-date" name="startDate" required>
+        </div>
+
+        <!-- Project Deadline -->
+        <div class="form-group">
+            <label for="deadline">Project Deadline</label>
+            <input type="date" id="deadline" name="projectDeadline" required>
+        </div>
+
+        <!-- Project Details -->
+        <div class="form-group">
+            <label for="details">Project Details</label>
+            <textarea id="details" name="projectDetails" rows="4" placeholder="Enter project details" required></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-group">
+            <button type="submit">Submit Project</button>
+        </div>
+    </form>
+</div>
+
+    
+</body>
+</html>

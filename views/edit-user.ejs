@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit User</title>
+  <style>
+    /* Optional: Add some basic styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    form {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Edit User</h1>
+  <form action="/edit-user/<%= user._id %>" method="POST">
+    <!-- Name Field -->
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" value="<%= user.name %>" required />
+
+    <!-- Role Dropdown -->
+    <label for="role">Role:</label>
+    <select id="role" name="role" required>
+      <option value="" disabled>Select a role</option>
+      <option value="Minister" <%= user.role === 'Minister' ? 'selected' : '' %>>Minister</option>
+      <option value="Government Official" <%= user.role === 'Government Official' ? 'selected' : '' %>>Government Official</option>
+      <option value="Public" <%= user.role === 'Public' ? 'selected' : '' %>>Public</option>
+      <option value="Admin" <%= user.role === 'Admin' ? 'selected' : '' %>>Admin</option>
+    </select>
+
+    <!-- Submit Button -->
+    <button type="submit">Update User</button>
+  </form>
+</body>
+</html>

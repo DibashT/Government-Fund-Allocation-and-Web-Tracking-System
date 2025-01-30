@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="/users.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>
+                <img src="image/LOGO.png" class="logo" alt="Logo">
+            </h2>
+            <ul>
+                <li><a href="/admin-dashboard">Home</a></li>
+                <li><a href="/request">Request</a></li>
+                <li><a href="/users">Users</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content">
+                <h1>User Details</h1>
+
+                <!-- Add User Form -->
+                <div class="add-user-btn-container">
+                  <a href="/add-users" class="add-user-btn">Add User</a>
+              </div>
+
+                <!-- User Table -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.N</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Creation Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (users.length > 0) { %>
+                            <% users.forEach((user, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= user.name %></td>
+                                    <td><%= user.role %></td>
+                                    <td>
+                                        <% if (user.createdAt instanceof Date && !isNaN(user.createdAt)) { %>
+                                            <%= new Date(user.createdAt).toLocaleDateString() %>
+                                        <% } else { %>
+                                            Invalid Date
+                                        <% } %>
+                                    </td>
+                                    <td class="actions">
+                                        <form action="/edit-user/<%= user._id %>" method="GET" style="display:inline;">
+                                            <button class="edit">Edit</button>
+                                        </form>
+                                        <form action="/delete-user/<%= user._id %>" method="POST" style="display:inline;">
+                                            <button class="delete" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="5">No users found.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
