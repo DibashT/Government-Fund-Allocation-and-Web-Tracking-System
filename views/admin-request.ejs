@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project request management for admin dashboard">
+    <title>Requests | Admin Dashboard</title>
+    
+    <!-- Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/admin-request.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Modal Content */
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            position: relative;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        /* Close Button */
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            font-size: 22px;
+            cursor: pointer;
+            color: #555;
+            transition: color 0.2s ease-in-out;
+        }
+        
+        .close-btn:hover {
+            color: red;
+        }
+        
+        /* Confirmation Message */
+        #confirmMessage {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        /* Rejection Reason (Optional) */
+        #rejectionReason {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            resize: none;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Space between buttons */
+        }
+        
+        .modal-buttons button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: 0.3s ease-in-out;
+        }
+        
+        #confirmYes {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        #confirmYes:hover {
+            background-color: #27ae60;
+        }
+        
+        .reject {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .reject:hover {
+            background-color: #c0392b;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .toast {
+            background-color: #333;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 15px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.success {
+            background-color: #28a745;
+        }
+        .toast.error {
+            background-color: #dc3545;
+        }
+        
+        
+        /* Modal Fade In Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <h2><img src="images/logo.png" class="logo" alt="Dashboard Logo"></h2>
+            <ul>
+                <li><a href="/admin-dashboard"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="/admin-request" class="active"><i class="fas fa-tasks"></i> <span>Request</span></a></li>
+                <li><a href="/admin-users"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                <li><a href="/admin-history"><i class="fas fa-history"></i> <span>History</span></a></li>
+                <li><a href="/admin-notifications"><i class="fas fa-bell"></i> <span>Notification</span></a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1>Project Requests</h1>
+                
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" tabindex="0"></i>
+                    <div class="dropdown-menu">
+                        <a href="/admin-profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </header>
+
+            <section class="content">
+                <div class="section-header">
+                    <i class="fas fa-folder-plus"></i> Pending Requests
+                </div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-sort"></i> S.N</th>
+                                <th><i class="fas fa-file-alt"></i> Project Name</th>
+                                <th><i class="fas fa-building"></i> Department</th>
+                                <th><i class="fas fa-dollar-sign"></i> Allocated Fund</th>
+                                <th><i class="fas fa-calendar"></i> Start Date</th>
+                                <th><i class="fas fa-calendar-day"></i> Deadline</th>
+                                <th><i class="fas fa-eye"></i> Details</th>
+                                <th><i class="fas fa-paperclip"></i> File Attachment</th>
+                                <th><i class="fas fa-user"></i> Requested By</th>
+                                <th><i class="fas fa-cogs"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (projects.length > 0) { %>
+                                <% projects.forEach((project, index) => { %>
+                                    <tr>
+                                        <td><%= index + 1 %></td>
+                                        <td><%= project.projectName %></td>
+                                        <td><%= project.department %></td>
+                                        <td>$<%= project.allocatedFund.toLocaleString() %></td>
+                                        <td><%= new Date(project.startDate).toLocaleDateString() %></td>
+                                        <td><%= new Date(project.projectDeadline).toLocaleDateString() %></td>
+                                        <td>
+                                          <button class="view-btn" data-project-id="<%= project._id %>">
+                                            <i class="fas fa-eye"></i> View
+                                          </button>
+                                        </td>
+                                        <td>
+                                            <% if (project.fileAttachment) { %>
+                                                <a href="/file-view/<%= encodeURIComponent(project.fileAttachment) %>" target="_blank">📎File</a>
+                                            <% } else { %>
+                                                No file attached
+                                            <% } %>
+                                        </td>
+                                        <td><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></td>
+                                        
+                                        <td class="actions">
+                                          <form action="/approve-project/<%= project._id %>" method="POST" onsubmit="return confirmApproval();">
+                                            <button class="approve"><i class="fas fa-check-circle"></i></button>
+                                          </form>
+                                          <form action="/reject-project/<%= project._id %>" method="POST" onsubmit="return confirmRejection();">
+                                            <button class="reject"><i class="fas fa-times-circle"></i></button>
+                                          </form>                                      
+                                        </td>
+                                    </tr>                                  
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="10" class="no-data">
+                                        <div class="no-data-message">
+                                            <i class="fas fa-folder-open"></i>
+                                            <p>No pending requests</p>
+                                            <small>All project requests have been processed</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Project Details</h2>
+            <p id="projectDescription">Loading...</p>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('confirmModal').style.display='none'">&times;</span>
+            <p id="confirmMessage">Are you sure?</p>
+            
+            <textarea id="rejectionReason" style="display: none;" placeholder="Provide rejection reason"></textarea>
+    
+            <div class="modal-buttons">
+                <button id="confirmYes" class="approve">Yes</button>
+                <button class="reject" onclick="document.getElementById('confirmModal').style.display='none'">No</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle profile dropdown
+            document.querySelector('.profile-icon').addEventListener('click', function() {
+                document.querySelector('.dropdown-menu').classList.toggle('show');
+            });
+            
+            // Toggle sidebar on mobile
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+            });
+        });
+    </script>
+    <script src="/js/request.js"></script>
+</body>
+</html>

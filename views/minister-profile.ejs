@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minister Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/minister.css">
+    <style>
+        .profile-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .profile-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .profile-form h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+        
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            margin-top: 15px;
+            font-weight: 500;
+            color: #34495e;
+        }
+        
+        input, select {
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        button {
+            margin-top: 25px;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .back-button {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .back-button a {
+            color: #7f8c8d;
+            text-decoration: none;
+            display: inline-block;
+            padding: 8px 16px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        
+        .back-button a:hover {
+            background: #f8f9fa;
+            color: #34495e;
+        }
+        
+        /* Profile Menu Custom Styles */
+        .profile-menu {
+          position: relative;
+        }
+        
+        .profile-icon {
+          cursor: pointer;
+          transition: transform 0.3s;
+        }
+        
+        .profile-icon:hover {
+          transform: scale(1.1);
+        }
+        
+        .dropdown-menu {
+          position: absolute;
+          top: 50px;
+          right: 0;
+          width: 180px;
+          background: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-10px);
+          transition: all 0.3s ease;
+          z-index: 1000;
+        }
+        
+        .profile-menu:hover .dropdown-menu {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+        
+        .dropdown-menu a {
+          display: flex;
+          align-items: center;
+          padding: 12px 15px;
+          text-decoration: none;
+          color: #333;
+          border-bottom: 1px solid #f1f1f1;
+          transition: background-color 0.2s;
+        }
+        
+        .dropdown-menu a:last-child {
+          border-bottom: none;
+        }
+        
+        .dropdown-menu a:hover {
+          background-color: #f8f9fa;
+        }
+        
+        .dropdown-menu a i {
+          margin-right: 10px;
+          width: 20px;
+          text-align: center;
+        }
+        
+        .dropdown-menu.show {
+          display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <h2><img src="/images/logo.png" class="logo" alt="Logo"></h2>
+            <ul>
+                <li><a href="/minister-dashboard"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="/minister-request"><i class="fas fa-tasks"></i> Request</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="top-header">
+                <h1>Minister Profile</h1>
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <div class="dropdown-menu">
+                        <a href="/minister-profile"><i class="fas fa-user"></i> <%= user ? user.name : 'Profile' %></a>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-container">
+                <div class="profile-form">
+                    <h2>View and Edit Profile</h2>
+                    <form action="/minister-profile/update" method="POST">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" value="<%= user.name %>" required>
+
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="<%= user.email %>" required>
+
+                        <label for="phone">Phone Number</label>
+                        <input type="text" id="phone" name="phone" value="<%= user.phone || '' %>">
+
+                        <label for="role">Role</label>
+                        <select id="role" name="role" disabled>
+                            <option value="Minister" <%= user.role === 'Minister' ? 'selected' : '' %>>Minister</option>
+                            <option value="Government Official" <%= user.role === 'Government Official' ? 'selected' : '' %>>Government Official</option>
+                            <option value="Public" <%= user.role === 'Public' ? 'selected' : '' %>>Public</option>
+                            <option value="Admin" <%= user.role === 'Admin' ? 'selected' : '' %>>Admin</option>
+                        </select>
+
+                        <button type="submit">Update Profile</button>
+                    </form>
+                    <div class="back-button">
+                        <a href="/minister-dashboard">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Profile dropdown functionality
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            const profileMenu = document.querySelector('.profile-menu');
+            
+            if (profileIcon && dropdownMenu) {
+                // Click functionality (for mobile compatibility)
+                profileIcon.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!profileMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+                
+                // Add tooltip/title to show username on hover
+                if (profileIcon.getAttribute('aria-label') === 'User menu') {
+                    const username = '<%= user ? user.name : "User" %>';
+                    profileIcon.setAttribute('title', username);
+                }
+            }
+            
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+        });
+        
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/login';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

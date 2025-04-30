@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Generated</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confirmation-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .success-icon {
+            font-size: 70px;
+            color: #2ecc71;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin: 0 0 15px 0;
+        }
+
+        p {
+            color: #7f8c8d;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .bill-details {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .bill-details p {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bill-details p strong {
+            color: #34495e;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .notification-msg {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .view-bill-link {
+            color: #3498db;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+
+        .view-bill-link:hover {
+            text-decoration: underline;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-view {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-view:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="confirmation-card">
+        <i class="fas fa-check-circle success-icon"></i>
+        <h1>Bill Generated Successfully!</h1>
+        <p>The bill for the following project has been generated and sent to the Government Officials.</p>
+        
+        <div class="bill-details">
+            <p><strong>Project Name:</strong> <span><%= project.projectName %></span></p>
+            <p><strong>Department:</strong> <span><%= project.department %></span></p>
+            <p><strong>Allocated Fund:</strong> <span>$<%= project.allocatedFund.toLocaleString() %></span></p>
+            <p><strong>Generated On:</strong> <span><%= new Date(project.billGeneratedAt).toLocaleDateString() %></span></p>
+            <p>
+                <strong>View Bill:</strong> 
+                <a href="<%= billUrl %>" target="_blank" class="view-bill-link">
+                    <i class="fas fa-file-pdf"></i> Open PDF
+                </a>
+            </p>
+        </div>
+        
+        <div class="button-group">
+            <a href="<%= billUrl %>" target="_blank" class="btn btn-view">
+                <i class="fas fa-file-pdf"></i> View Bill
+            </a>
+            <a href="/minister-request" class="btn">
+                <i class="fas fa-arrow-left"></i> Return to Projects
+            </a>
+        </div>
+        
+        <div class="notification-msg">
+            <i class="fas fa-info-circle"></i> Government Officials have been notified and can now access this bill.
+        </div>
+    </div>
+</body>
+</html> 

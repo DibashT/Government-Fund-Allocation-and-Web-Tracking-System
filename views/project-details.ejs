@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project Details for Government Ministers">
+    <title>Project Details - Minister Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <link rel="stylesheet" href="/project-details.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Back Button -->
+        <div class="back-button">
+            <a href="javascript:history.back()"><i class="fas fa-arrow-left"></i> Back to Projects</a>
+        </div>
+        
+        <div class="main-content">
+            <div class="project-header">
+                <h1><i class="fas fa-project-diagram"></i> Project Details</h1>
+                <div class="project-status">
+                    <% if (project.status === "Approved") { %>
+                        <% if (project.billFilePath) { %>
+                            <span class="status-indicator status-complete"><i class="fas fa-check-circle"></i> Completed</span>
+                        <% } else { %>
+                            <span class="status-indicator status-approved"><i class="fas fa-check-circle"></i> Approved</span>
+                        <% } %>
+                    <% } else if (project.status === "Rejected") { %>
+                        <span class="status-indicator status-rejected"><i class="fas fa-times-circle"></i> Rejected</span>
+                    <% } else { %>
+                        <span class="status-indicator status-pending"><i class="fas fa-clock"></i> Pending</span>
+                    <% } %>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div class="project-card">
+                    <div class="project-title">
+                        <h2><%= project.projectName %></h2>
+                        <span class="department-badge"><%= project.department %></span>
+                    </div>
+                    
+                    <div class="project-details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-money-bill-wave"></i> Allocated Fund</div>
+                            <div class="detail-value">$<%= project.allocatedFund.toLocaleString() %></div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-calendar-day"></i> Start Date</div>
+                            <div class="detail-value"><%= new Date(project.startDate).toLocaleDateString() %></div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-calendar-check"></i> Deadline</div>
+                            <div class="detail-value"><%= new Date(project.projectDeadline).toLocaleDateString() %></div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-user"></i> Requested By</div>
+                            <div class="detail-value"><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-map-marker-alt"></i> Location</div>
+                            <div class="detail-value">
+                                <% if (project.location && project.location.coordinates && project.location.coordinates.length === 2) { %>
+                                    <span><%= project.location.coordinates[1].toFixed(6) %>, <%= project.location.coordinates[0].toFixed(6) %></span>
+                                    <div class="location-map" id="map" data-lat="<%= project.location.coordinates[1] %>" data-lng="<%= project.location.coordinates[0] %>"></div>
+                                <% } else { %>
+                                    <span class="no-location">Not available</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item full-width">
+                            <div class="detail-label"><i class="fas fa-align-left"></i> Project Description</div>
+                            <div class="detail-value description-text">
+                                <%= project.projectDescription %>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-paperclip"></i> File Attachment</div>
+                            <div class="detail-value">
+                                <% if (project.fileAttachment) { %>
+                                    <a href="/file-view/<%= encodeURIComponent(project.fileAttachment) %>" target="_blank" class="file-link">
+                                        <i class="fas fa-file-alt"></i> View Attached File
+                                    </a>
+                                <% } else { %>
+                                    <span class="no-file">No file attached</span>
+                                <% } %>
+                            </div>
+                        </div>
+                        
+                        <% if (project.billFilePath) { %>
+                        <div class="detail-item">
+                            <div class="detail-label"><i class="fas fa-file-invoice"></i> Bill</div>
+                            <div class="detail-value">
+                                <a href="/file-view/<%= encodeURIComponent(project.billFilePath) %>" target="_blank" class="file-link">
+                                    <i class="fas fa-file-pdf"></i> View Bill
+                                </a>
+                            </div>
+                        </div>
+                        <% } %>
+                    </div>
+                    
+                    <% if (project.status !== "Approved" && project.status !== "Rejected") { %>
+                    <div class="action-buttons">
+                        <form action="/approve-project/<%= project._id %>" method="POST" onsubmit="return confirmApproval();">
+                            <button class="approve-btn"><i class="fas fa-check-circle"></i> Approve Project</button>
+                        </form>
+                        <form action="/reject-project/<%= project._id %>" method="POST" onsubmit="return confirmRejection();">
+                            <button class="reject-btn"><i class="fas fa-times-circle"></i> Reject Project</button>
+                        </form>
+                    </div>
+                    <% } else if (project.status === "Approved" && !project.billFilePath) { %>
+                    <div class="action-buttons">
+                        <button class="generate-bill-btn" onclick="generateBill('<%= project._id %>')">
+                            <i class="fas fa-file-invoice"></i> Generate Bill
+                        </button>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal for Actions -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div id="confirmMessage"></div>
+            <textarea id="rejectionReason" placeholder="Enter reason for rejection (optional)"></textarea>
+            <div class="modal-buttons">
+                <button id="confirmYes">Yes, Confirm</button>
+                <button id="confirmNo">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- JavaScript for Map -->
+    <% if (project.location && project.location.coordinates && project.location.coordinates.length === 2) { %>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+    <script>
+        function initMap() {
+            const mapElement = document.getElementById('map');
+            const lat = parseFloat(mapElement.getAttribute('data-lat'));
+            const lng = parseFloat(mapElement.getAttribute('data-lng'));
+            
+            const map = new google.maps.Map(mapElement, {
+                center: { lat, lng },
+                zoom: 14
+            });
+            
+            new google.maps.Marker({
+                position: { lat, lng },
+                map: map,
+                title: '<%= project.projectName %>'
+            });
+        }
+    </script>
+    <% } %>
+
+    <!-- JavaScript for Confirmation Modals -->
+    <script>
+        const modal = document.getElementById('confirmModal');
+        const closeBtn = document.querySelector('.close-btn');
+        const confirmMessage = document.getElementById('confirmMessage');
+        const rejectionReason = document.getElementById('rejectionReason');
+        const confirmYes = document.getElementById('confirmYes');
+        const confirmNo = document.getElementById('confirmNo');
+        let currentForm = null;
+        
+        // Close modal when clicking X
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        }
+        
+        // Confirm approval
+        function confirmApproval() {
+            modal.style.display = "flex";
+            confirmMessage.textContent = "Are you sure you want to approve this project?";
+            rejectionReason.style.display = "none";
+            
+            // Store the form
+            currentForm = event.target;
+            
+            // Prevent form submission
+            return false;
+        }
+        
+        // Confirm rejection
+        function confirmRejection() {
+            modal.style.display = "flex";
+            confirmMessage.textContent = "Are you sure you want to reject this project?";
+            rejectionReason.style.display = "block";
+            
+            // Store the form
+            currentForm = event.target;
+            
+            // Prevent form submission
+            return false;
+        }
+        
+        // Handle confirmation
+        confirmYes.onclick = function() {
+            if (currentForm) {
+                // If rejection, add reason as hidden input
+                if (rejectionReason.style.display === "block") {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'rejectionReason';
+                    input.value = rejectionReason.value;
+                    currentForm.appendChild(input);
+                }
+                
+                // Submit the form
+                currentForm.submit();
+            }
+            
+            // Close modal
+            modal.style.display = "none";
+        }
+        
+        // Handle cancellation
+        confirmNo.onclick = function() {
+            modal.style.display = "none";
+        }
+        
+        // Generate bill function
+        function generateBill(projectId) {
+            // Show toast notification
+            showToast('Generating bill...', 'info');
+            
+            // Send AJAX request to generate bill
+            fetch(`/generate-bill/${projectId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Bill generated successfully!', 'success');
+                    // Reload page after 2 seconds
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showToast('Failed to generate bill: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('An error occurred while generating the bill', 'error');
+                console.error('Error:', error);
+            });
+        }
+        
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            toastContainer.appendChild(toast);
+            
+            // Show toast with animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Remove toast after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 300);
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

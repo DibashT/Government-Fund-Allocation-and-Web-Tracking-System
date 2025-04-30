@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project Requests for Government Ministers">
+    <title>Project Requests - Minister Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <link rel="stylesheet" href="/minister-request.css">
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Modal Content */
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            width: 90%;
+            max-width: 450px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            position: relative;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        /* Close Button */
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            font-size: 22px;
+            cursor: pointer;
+            color: #555;
+            transition: color 0.2s ease-in-out;
+        }
+        
+        .close-btn:hover {
+            color: red;
+        }
+        
+        /* Confirmation Message */
+        #confirmMessage {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        /* Rejection Reason (Optional) */
+        #rejectionReason {
+            width: 100%;
+            height: 80px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            resize: none;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px; /* Space between buttons */
+        }
+        
+        .modal-buttons button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: 0.3s ease-in-out;
+        }
+        
+        #confirmYes {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        #confirmYes:hover {
+            background-color: #27ae60;
+        }
+        
+        .reject {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .reject:hover {
+            background-color: #c0392b;
+        }
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        /* Generate Bill Button (disabled and active state) */
+        .generate-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: #7f8c8d; /* Gray when disabled */
+            color: #fff;
+            border: none;
+            transition: 0.3s ease-in-out;
+        }
+        
+        .generate-btn:hover {
+            background-color: #2c3e50;
+        }
+        
+        .generate-btn.disabled {
+            background-color: #95a5a6; /* Dimmed color */
+            cursor: not-allowed;
+        }
+        
+        .generate-btn.enabled {
+            background-color: #3498db; /* Blue when enabled */
+        }
+        
+                
+        .toast {
+            background-color: #333;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.4s ease;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 15px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.success {
+            background-color: #28a745;
+        }
+        .toast.error {
+            background-color: #dc3545;
+        }
+        
+        
+        /* Modal Fade In Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Modal section styling */
+        .modal-section {
+            margin-bottom: 15px;
+        }
+        
+        .modal-section h3 {
+            font-size: 16px;
+            color: #3498db;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .modal-section p {
+            margin-top: 0;
+            line-height: 1.5;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <h2>
+                <img src="/images/logo.png" class="logo" alt="Logo">
+            </h2>
+            <ul>
+                <li><a href="/minister-dashboard"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="/minister-request" class="active"><i class="fas fa-tasks"></i> Request</a></li>
+                <li><a href="/minister-project-status"><i class="fas fa-chart-line"></i> Project Status</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="top-header">
+                <h1>Project Requests</h1>
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <div class="dropdown-menu">
+                        <a href="/minister-profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div class="section-header"><i class="fas fa-folder-plus"></i> Project Requests</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.N</th>
+                            <th>Project Name</th>
+                            <th>Department</th>
+                            <th>Allocated Fund</th>
+                            <th>Start Date</th>
+                            <th>Deadline</th>
+                            <th>Details</th>
+                            <th>File Attachment</th>
+                            <th>Requested By</th>
+                            <th>Location</th>
+                            <th>Actions</th>
+                            <th>Generate Bill</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (projects.length > 0) { %>
+                            <% projects.forEach((project, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= project.projectName %></td>
+                                    <td><%= project.department %></td>
+                                    <td>$<%= project.allocatedFund.toLocaleString() %></td>
+                                    <td><%= new Date(project.startDate).toLocaleDateString() %></td>
+                                    <td><%= new Date(project.projectDeadline).toLocaleDateString() %></td>
+                                    <td>
+                                        <button class="view-btn" data-project-id="<%= project._id %>">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <% if (project.fileAttachment) { %>
+                                            <a href="/file-view/<%= encodeURIComponent(project.fileAttachment) %>" target="_blank">📎File</a>
+                                        <% } else { %>
+                                            No file attached
+                                        <% } %>
+                                    </td>
+                                    <td><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></td>
+                                    <td>
+                                        <% if (project.location && project.location.coordinates && project.location.coordinates.length === 2) { %>
+                                            <span title="Latitude: <%= project.location.coordinates[1] %>, Longitude: <%= project.location.coordinates[0] %>">
+                                                <%= project.location.coordinates[1].toFixed(4) %>, <%= project.location.coordinates[0].toFixed(4) %>
+                                            </span>
+                                        <% } else { %>
+                                            <span class="no-location">Not available</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="actions">
+                                        <% if (project.status === "Approved") { %>
+                                            <% if (project.billFilePath) { %>
+                                                <span class="status-indicator status-complete"><i class="fas fa-check-circle"></i> Bill Generated</span>
+                                            <% } else { %>
+                                                <span class="status-indicator status-approved"><i class="fas fa-clock"></i> Bill Pending</span>
+                                            <% } %>
+                                        <% } else { %>
+                                            <form action="/approve-project/<%= project._id %>" method="POST" onsubmit="return confirmApproval();">
+                                                <button class="approve"><i class="fas fa-check-circle"></i> Approve</button>
+                                            </form>
+                                            <form action="/reject-project/<%= project._id %>" method="POST" onsubmit="return confirmRejection();">
+                                                <button class="reject"><i class="fas fa-times-circle"></i> Reject</button>
+                                            </form>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (project.status === "Approved" && !project.billFilePath) { %>
+                                            <button class="generate-btn enabled" id="generate-btn-<%= project._id %>" onclick="generateBill('<%= project._id %>')">
+                                                <i class="fas fa-file-invoice"></i> Generate Bill
+                                            </button>
+                                        <% } else if (project.billFilePath) { %>
+                                            <span class="status-indicator status-complete"><i class="fas fa-check-circle"></i> Complete</span>
+                                        <% } else { %>
+                                            <button class="generate-btn disabled" disabled>
+                                                <i class="fas fa-file-invoice"></i> Generate Bill
+                                            </button>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="12">No projects found.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>                                     
+                </table>
+                
+                <!-- Pagination Controls -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Showing <span id="currentShowing">1-10</span> of <%= projects.length %> projects
+                    </div>
+                    <div class="pagination" id="pagination">
+                        <!-- Pagination buttons will be added here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add JavaScript for Pagination -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pagination variables
+            const itemsPerPage = 10;
+            let currentPage = 1;
+            const tableRows = document.querySelectorAll('tbody tr');
+            const totalPages = Math.ceil(tableRows.length / itemsPerPage);
+            const pageNumbers = document.getElementById('pagination');
+            const currentShowing = document.getElementById('currentShowing');
+            
+            // Initialize pagination
+            updatePagination();
+            showPage(1);
+            
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Profile dropdown
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if (profileIcon && dropdownMenu) {
+                profileIcon.addEventListener('click', function() {
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                document.addEventListener('click', function(event) {
+                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+            
+            // Functions for pagination
+            function showPage(page) {
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                
+                // Hide all rows
+                tableRows.forEach(row => {
+                    row.style.display = 'none';
+                });
+                
+                // Show only rows for the current page
+                for (let i = start; i < end && i < tableRows.length; i++) {
+                    tableRows[i].style.display = '';
+                }
+                
+                // Update current showing text
+                const showingStart = start + 1;
+                const showingEnd = Math.min(end, tableRows.length);
+                currentShowing.textContent = `${showingStart}-${showingEnd}`;
+                
+                // Update active page in pagination
+                currentPage = page;
+                updateActivePage();
+            }
+            
+            function updatePagination() {
+                pageNumbers.innerHTML = '';
+                
+                // Add previous button
+                if (totalPages > 1) {
+                    const prevBtn = document.createElement('button');
+                    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                    prevBtn.classList.add('pagination-btn', 'prev');
+                    prevBtn.addEventListener('click', () => {
+                        if (currentPage > 1) showPage(currentPage - 1);
+                    });
+                    pageNumbers.appendChild(prevBtn);
+                }
+                
+                // Add page numbers
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.classList.add('pagination-btn', 'page');
+                    if (i === 1) pageBtn.classList.add('active');
+                    pageBtn.addEventListener('click', () => showPage(i));
+                    pageNumbers.appendChild(pageBtn);
+                }
+                
+                // Add next button
+                if (totalPages > 1) {
+                    const nextBtn = document.createElement('button');
+                    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                    nextBtn.classList.add('pagination-btn', 'next');
+                    nextBtn.addEventListener('click', () => {
+                        if (currentPage < totalPages) showPage(currentPage + 1);
+                    });
+                    pageNumbers.appendChild(nextBtn);
+                }
+            }
+            
+            function updateActivePage() {
+                const pageBtns = document.querySelectorAll('.pagination-btn.page');
+                pageBtns.forEach((btn, index) => {
+                    if (index + 1 === currentPage) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+        });
+    </script>
+
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Project Details</h2>
+            <div class="modal-section">
+                <p id="projectDescription">Loading...</p>
+            </div>
+    
+            <!-- Location section (hidden by JS) -->
+            <div class="modal-section">
+                <p id="projectLocation" style="display: none;"><strong>Location:</strong> <span id="locationCoordinates">Loading...</span></p>
+            </div>
+        </div>
+    </div>
+    
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('confirmModal').style.display='none'">&times;</span>
+            <p id="confirmMessage">Are you sure?</p>
+            
+            <textarea id="rejectionReason" style="display: none;" placeholder="Provide rejection reason"></textarea>
+    
+            <button id="confirmYes" class="approve">Yes</button>
+            <button class="reject" onclick="document.getElementById('confirmModal').style.display='none'">No</button>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const projects = JSON.parse('<%- JSON.stringify(projects) %>');
+        
+            projects.forEach((project) => {
+                const generateBtn = document.getElementById(`generate-btn-${project._id}`);
+        
+                // Ensure the generate button becomes active if the project is approved
+                if (project.status === "Approved" && !project.billFilePath) {
+                    generateBtn.classList.remove("disabled");
+                    generateBtn.classList.add("enabled");
+                }
+            });
+            
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Profile dropdown functionality
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if (profileIcon && dropdownMenu) {
+                profileIcon.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+        
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.classList.add('toast', type);
+            toast.innerText = message;
+            document.getElementById('toast-container').appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+        
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/login';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+
+    <script src="/js/request.js"></script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Notifications management for government officials">
+    <title>Notifications | Dashboard</title>
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="officials-notification.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <h2>
+                <img src="/images/logo.png" class="logo" alt="Logo">
+            </h2>
+            <ul>
+                <li><a href="/officials-dashboard"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="/officials-project"><i class="fas fa-tasks"></i> Project</a></li>
+                <li><a href="/officials-project-progress"><i class="fas fa-chart-line"></i> Project Progress</a></li> 
+                <li><a href="/officials-notification" class="active"><i class="fas fa-bell"></i> Notification</a></li>
+                <li><a href="/officials-bill"><i class="fas fa-file-invoice-dollar"></i> Bill</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <h1>Notifications</h1>
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <div class="dropdown-menu">
+                        <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Notifications Content -->
+            <div class="content">
+                <div class="section-header">
+                    <i class="fas fa-bell"></i> Notification Center
+                </div>
+
+                <!-- Test Notification Button -->
+                <div class="test-notification-container">
+                    <button id="testDeadlineBtn" class="test-notification-btn">
+                        <i class="fas fa-vial"></i> Test Deadline Notification
+                    </button>
+                    <span id="testStatus" class="test-status"></span>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="status">
+                        <i class="fas fa-info-circle"></i> Project Status
+                    </button>
+                    <button class="tab-btn" data-tab="deadline">
+                        <i class="fas fa-exclamation-triangle"></i> Deadline Alerts
+                    </button>
+                </div>
+
+                <div id="status" class="tab-content active">
+                    <% const statusNotifications = notifications.filter(n => n.status === 'Approved' || n.status === 'Rejected'); %>
+                    <% if (statusNotifications.length > 0) { %>
+                        <ul class="notification-list">
+                        <% statusNotifications.forEach(notification => { %>
+                            <li class="notification-item <%= notification.status.toLowerCase() %>">
+                                <div class="icon">
+                                    <% if (notification.status === 'Approved') { %>
+                                        <i class="fas fa-check-circle"></i>
+                                    <% } else { %>
+                                        <i class="fas fa-times-circle"></i>
+                                    <% } %>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message">
+                                        <%= notification.message %>
+                                    </div>
+                                    <div class="meta">
+                                        <span class="status"><%= notification.status %></span>
+                                        <span class="time"><i class="fas fa-clock"></i> <%= new Date(notification.createdAt).toLocaleString() %></span>
+                                    </div>
+                                </div>
+                            </li>
+                        <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <div class="no-notifications">
+                            <div class="icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <p>No status notifications</p>
+                            <small>You'll receive notifications when your project status changes</small>
+                        </div>
+                    <% } %>
+                </div>
+
+                <div id="deadline" class="tab-content">
+                    <% const deadlineNotifications = notifications.filter(n => n.status === 'DeadlineAlert'); %>
+                    <% if (deadlineNotifications.length > 0) { %>
+                        <ul class="notification-list">
+                        <% deadlineNotifications.forEach(notification => { %>
+                            <li class="notification-item deadline-alert">
+                                <div class="icon">
+                                    <i class="fas fa-hourglass-half"></i>
+                                </div>
+                                <div class="message-content">
+                                    <div class="message">
+                                        <%= notification.message %>
+                                    </div>
+                                    <div class="meta">
+                                        <span class="status">Deadline Alert</span>
+                                        <span class="time"><i class="fas fa-clock"></i> <%= new Date(notification.createdAt).toLocaleString() %></span>
+                                    </div>
+                                </div>
+                            </li>
+                        <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <div class="no-notifications">
+                            <div class="icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <p>No deadline alerts</p>
+                            <small>You'll be notified when project deadlines are approaching</small>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js" defer></script>
+    <script src="/js/socket-notification.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching functionality
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Hide all tab contents
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Remove active class from all tab buttons
+                    tabButtons.forEach(button => {
+                        button.classList.remove('active');
+                    });
+                    
+                    // Show the selected tab content
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Add active class to the clicked button
+                    this.classList.add('active');
+                });
+            });
+            
+            // Profile dropdown functionality
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.querySelector('.sidebar');
+            
+            if (profileIcon && dropdownMenu) {
+                profileIcon.addEventListener('click', function() {
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+            
+            // Mobile sidebar toggle
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Test notification button functionality
+            const testBtn = document.getElementById('testDeadlineBtn');
+            const testStatus = document.getElementById('testStatus');
+            
+            if (testBtn) {
+                testBtn.addEventListener('click', async function() {
+                    testBtn.disabled = true;
+                    testStatus.textContent = "Sending test notification...";
+                    testStatus.className = "test-status";
+                    
+                    try {
+                        const response = await fetch('/test-deadline-notification', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                            testStatus.textContent = "✅ " + data.message;
+                            testStatus.classList.add('success');
+                            
+                            // Switch to deadline tab to show the test notification
+                            document.querySelector('.tab-btn[data-tab="deadline"]').click();
+                            
+                            // Reload the page after 2 seconds to show the new notification
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        } else {
+                            testStatus.textContent = "❌ " + (data.error || "Failed to send test notification");
+                            testStatus.classList.add('error');
+                        }
+                    } catch (error) {
+                        testStatus.textContent = "❌ Error: " + error.message;
+                        testStatus.classList.add('error');
+                    } finally {
+                        testBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

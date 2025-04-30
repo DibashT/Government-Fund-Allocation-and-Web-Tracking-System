@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project history management for admin dashboard">
+    <title>Project History | Admin Dashboard</title>
+    
+    <!-- Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="/history.css">
+    
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#projectsTable').DataTable({
+                "scrollY": "auto",
+                "scrollCollapse": true,
+                "paging": true,
+                "info": true,
+                "lengthChange": true,
+                "ordering": true,
+                "searching": true,
+                "responsive": true,
+                "autoWidth": false,
+                "pageLength": 10,
+                "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+                "language": {
+                    "search": "Search projects:",
+                    "lengthMenu": "Show _MENU_ projects per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ projects",
+                    "infoEmpty": "No projects available",
+                    "zeroRecords": "No matching projects found"
+                },
+                "columnDefs": [
+                    { "width": "5%", "targets": 0 }, // S.N
+                    { "width": "15%", "targets": 1 }, // Project Name
+                    { "width": "10%", "targets": 2 }, // Department
+                    { "width": "10%", "targets": 3 }, // Fund
+                    { "width": "10%", "targets": 4 }, // Start Date
+                    { "width": "10%", "targets": 5 }, // Deadline
+                    { "width": "10%", "targets": 6 }, // Requested By
+                    { "width": "8%", "targets": 7 }, // Status
+                    { "width": "10%", "targets": 8 }, // Action By
+                    { "width": "10%", "targets": 9 } // Action Date
+                ]
+            });
+        });        
+    </script>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <h2><img src="images/logo.png" class="logo" alt="Dashboard Logo"></h2>
+            <ul>
+                <li><a href="/admin-dashboard"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="/admin-request"><i class="fas fa-tasks"></i> <span>Request</span></a></li>
+                <li><a href="/admin-users"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                <li><a href="/admin-history" class="active"><i class="fas fa-history"></i> <span>History</span></a></li>
+                <li><a href="/admin-notifications"><i class="fas fa-bell"></i> <span>Notification</span></a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1>Project History</h1>
+                
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" tabindex="0"></i>
+                    <div class="dropdown-menu">
+                        <a href="/admin-profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- History Content -->
+            <section class="content">
+                <div class="section-header">
+                    <i class="fas fa-folder-open"></i> Project Records
+                </div>
+
+                <!-- Projects Table -->
+                <div class="table-container">
+                    <% if (projects.length > 0) { %>
+                        <table id="projectsTable">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-list-ol"></i> S.N</th>
+                                    <th><i class="fas fa-project-diagram"></i> Project Name</th>
+                                    <th><i class="fas fa-building"></i> Department</th>
+                                    <th><i class="fas fa-dollar-sign"></i> Allocated Fund</th>
+                                    <th><i class="fas fa-calendar-alt"></i> Start Date</th>
+                                    <th><i class="fas fa-clock"></i> Deadline</th>
+                                    <th><i class="fas fa-user"></i> Requested By</th>
+                                    <th><i class="fas fa-check-circle"></i> Status</th>
+                                    <th><i class="fas fa-user-check"></i> Action By</th>
+                                    <th><i class="fas fa-calendar-check"></i> Action Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% projects.forEach((project, index) => { %>
+                                    <tr>
+                                        <td><%= index + 1 %></td>
+                                        <td><%= project.projectName %></td>
+                                        <td><%= project.department %></td>
+                                        <td>$<%= project.allocatedFund.toLocaleString() %></td>
+                                        <td><%= project.startDate ? project.startDate.toISOString().split('T')[0] : "N/A" %></td>
+                                        <td><%= project.projectDeadline ? project.projectDeadline.toISOString().split('T')[0] : "N/A" %></td>
+                                        <td><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></td>
+                                        <td>
+                                            <span class="<%= project.status === 'Approved' ? 'approved-status' : (project.status === 'Rejected' ? 'rejected-status' : 'pending-status') %>">
+                                                <%= project.status %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <%= project.actionBy && project.actionBy.name ? project.actionBy.name : "Unknown" %>
+                                        </td>                                  
+                                        <td><%= project.updatedAt ? project.updatedAt.toISOString().split('T')[0] : "N/A" %></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    <% } else { %>
+                        <div class="no-projects">
+                            <div class="icon">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <p>No projects found</p>
+                            <small>Completed projects will appear here</small>
+                        </div>
+                    <% } %>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Profile dropdown functionality
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if (profileIcon && dropdownMenu) {
+                profileIcon.addEventListener('click', function() {
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

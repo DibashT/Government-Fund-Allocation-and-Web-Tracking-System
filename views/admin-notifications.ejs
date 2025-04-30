@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Notification management for admin dashboard">
+  <title>Notifications | Admin Dashboard</title>
+  
+  <!-- Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/admin-notifications.css">
+  
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/js/admin-notifications.js" defer></script>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Mobile Toggle -->
+    <div class="mobile-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </div>
+    
+    <div class="sidebar" id="sidebar">
+      <h2><img src="images/logo.png" class="logo" alt="Dashboard Logo"></h2>
+      <ul>
+        <li><a href="/admin-dashboard"><i class="fas fa-home"></i> <span>Home</span></a></li>
+        <li><a href="/admin-request"><i class="fas fa-tasks"></i> <span>Request</span></a></li>
+        <li><a href="/admin-users"><i class="fas fa-users"></i> <span>Users</span></a></li>
+        <li><a href="/admin-history"><i class="fas fa-history"></i> <span>History</span></a></li>
+        <li><a href="/admin-notifications" class="active"><i class="fas fa-bell"></i> <span>Notification</span></a></li>
+      </ul>
+    </div>
+
+    <main class="main-content">
+      <header class="top-header">
+        <h1>Notifications</h1>
+        
+        <div class="profile-menu">
+          <i class="fas fa-user-circle profile-icon" tabindex="0"></i>
+          <div class="dropdown-menu">
+            <a href="/admin-profile"><i class="fas fa-user"></i> Profile</a>
+            <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Notifications Content -->
+      <section class="content">
+        <div class="section-header">
+          <i class="fas fa-bell"></i> Notification Center
+        </div>
+
+        <div class="notifications-container">
+          <% if (notifications && notifications.length > 0) { %>
+            <ul class="notification-list" id="notification-list">
+              <% notifications.forEach(notification => { %>
+                <li class="notification-item <%= notification.status.toLowerCase() %> <%= !notification.isRead ? 'unread' : '' %>">
+                  <div class="icon">
+                    <% if (notification.status === 'success') { %>
+                      <i class="fas fa-check-circle"></i>
+                    <% } else if (notification.status === 'warning') { %>
+                      <i class="fas fa-exclamation-triangle"></i>
+                    <% } else if (notification.status === 'info') { %>
+                      <i class="fas fa-info-circle"></i>
+                    <% } else { %>
+                      <i class="fas fa-bell"></i>
+                    <% } %>
+                  </div>
+                  <div class="message-content">
+                    <div class="message">
+                      <%= notification.message %>
+                    </div>
+                    <div class="meta">
+                      <span class="status"><%= notification.status %></span>
+                      <span class="time"><i class="fas fa-clock"></i> <%= new Date(notification.createdAt).toLocaleString() %></span>
+                    </div>
+                  </div>
+                </li>
+              <% }) %>
+            </ul>
+          <% } else { %>
+            <div class="no-notifications">
+              <div class="icon">
+                <i class="fas fa-inbox"></i>
+              </div>
+              <p>No notifications</p>
+              <small>You'll receive notifications for important system events</small>
+            </div>
+          <% } %>
+        </div>
+      </section>
+    </main>  
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      window.logout = function() {
+        window.location.href = '/logout';
+      };
+    });
+  </script>
+</body>
+</html>

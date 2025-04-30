@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project Status for Government Ministers">
+    <title>Project Status - Minister Dashboard</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <link rel="stylesheet" href="/minister-project-status.css">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <h2>
+                <img src="/images/logo.png" class="logo" alt="Logo">
+            </h2>
+            <ul>
+                <li><a href="/minister-dashboard"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="/minister-request"><i class="fas fa-tasks"></i> Request</a></li>
+                <li><a href="/minister-project-status" class="active"><i class="fas fa-chart-line"></i> Project Status</a></li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <div class="top-header">
+                <h1>Project Status</h1>
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <div class="dropdown-menu">
+                        <a href="/minister-profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="section-header"><i class="fas fa-chart-line"></i> Project Progress Overview</div>
+                
+                <!-- Statistics Cards -->
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-project-diagram"></i></div>
+                        <div class="stat-content">
+                            <h3>Total Projects</h3>
+                            <p><%= statistics.totalProjects %></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-spinner"></i></div>
+                        <div class="stat-content">
+                            <h3>Ongoing Projects</h3>
+                            <p><%= statistics.ongoingProjects %></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-content">
+                            <h3>Completed Projects</h3>
+                            <p><%= statistics.completedProjects %></p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                        <div class="stat-content">
+                            <h3>Pending Projects</h3>
+                            <p><%= statistics.pendingProjects %></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project Progress Table -->
+                <div class="section-header"><i class="fas fa-clipboard-list"></i> Detailed Project Progress</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.N</th>
+                            <th>Project Name</th>
+                            <th>Department</th>
+                            <th>Progress</th>
+                            <th>Requested By</th>
+                            <th>Documents</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (projects.length > 0) { %>
+                            <% projects.forEach((project, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= project.projectName %></td>
+                                    <td><%= project.department %></td>
+                                    <td>
+                                        <div class="progress-container">
+                                            <progress value="<%= project.progress %>" max="100" class="<%= project.progress < 30 ? 'progress-low' : project.progress < 70 ? 'progress-medium' : 'progress-high' %>"></progress>
+                                            <span><%= project.progress %>%</span>
+                                        </div>
+                                    </td>
+                                    <td><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></td>
+                                    <td>
+                                        <% if (project.billFiles && Object.keys(project.billFiles).length > 0) { %>
+                                            <div class="document-list">
+                                                <button onclick="showDocumentsModal('<%= project._id %>')" class="view-docs-btn">
+                                                    <i class="fas fa-file-alt"></i> View Files (<%= Object.keys(project.billFiles).length %>)
+                                                </button>
+                                            </div>
+                                        <% } else { %>
+                                            <span class="no-docs">No documents</span>
+                                        <% } %>
+                                    </td>
+
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="8">No projects found.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>                                     
+                </table>
+                
+                <!-- Pagination Controls -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Showing <span id="currentShowing">1-10</span> of <%= projects.length %> projects
+                    </div>
+                    <div class="pagination" id="pagination">
+                        <!-- Pagination buttons will be added here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Modal -->
+    <div id="documentsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDocumentsModal()">&times;</span>
+            <h2><i class="fas fa-file-alt"></i> Project Documents</h2>
+            <div id="documentsList"></div>
+        </div>
+    </div>
+    
+
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pagination variables
+            const itemsPerPage = 10;
+            let currentPage = 1;
+            const tableRows = document.querySelectorAll('tbody tr');
+            const totalPages = Math.ceil(tableRows.length / itemsPerPage);
+            const pageNumbers = document.getElementById('pagination');
+            const currentShowing = document.getElementById('currentShowing');
+            
+            // Initialize pagination
+            updatePagination();
+            showPage(1);
+            
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Profile dropdown
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if (profileIcon && dropdownMenu) {
+                profileIcon.addEventListener('click', function() {
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                document.addEventListener('click', function(event) {
+                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+            
+            // Functions for pagination
+            function showPage(page) {
+                const start = (page - 1) * itemsPerPage;
+                const end = start + itemsPerPage;
+                
+                // Hide all rows
+                tableRows.forEach(row => {
+                    row.style.display = 'none';
+                });
+                
+                // Show only rows for the current page
+                for (let i = start; i < end && i < tableRows.length; i++) {
+                    tableRows[i].style.display = '';
+                }
+                
+                // Update current showing text
+                const showingStart = start + 1;
+                const showingEnd = Math.min(end, tableRows.length);
+                currentShowing.textContent = `${showingStart}-${showingEnd}`;
+                
+                // Update active page in pagination
+                currentPage = page;
+                updateActivePage();
+            }
+            
+            function updatePagination() {
+                pageNumbers.innerHTML = '';
+                
+                // Add previous button
+                if (totalPages > 1) {
+                    const prevBtn = document.createElement('button');
+                    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                    prevBtn.classList.add('pagination-btn', 'prev');
+                    prevBtn.addEventListener('click', () => {
+                        if (currentPage > 1) showPage(currentPage - 1);
+                    });
+                    pageNumbers.appendChild(prevBtn);
+                }
+                
+                // Add page numbers
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.classList.add('pagination-btn', 'page');
+                    if (i === 1) pageBtn.classList.add('active');
+                    pageBtn.addEventListener('click', () => showPage(i));
+                    pageNumbers.appendChild(pageBtn);
+                }
+                
+                // Add next button
+                if (totalPages > 1) {
+                    const nextBtn = document.createElement('button');
+                    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                    nextBtn.classList.add('pagination-btn', 'next');
+                    nextBtn.addEventListener('click', () => {
+                        if (currentPage < totalPages) showPage(currentPage + 1);
+                    });
+                    pageNumbers.appendChild(nextBtn);
+                }
+            }
+            
+            function updateActivePage() {
+                const pageBtns = document.querySelectorAll('.pagination-btn.page');
+                pageBtns.forEach((btn, index) => {
+                    if (index + 1 === currentPage) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+        });
+        
+        // Show documents modal
+        function showDocumentsModal(projectId) {
+            const modal = document.getElementById('documentsModal');
+            const documentsList = document.getElementById('documentsList');
+            
+            // Clear previous content
+            documentsList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading documents...</div>';
+            
+            // Show modal
+            modal.style.display = 'flex';
+            
+            // Fetch documents for this project
+            fetch(`/api/project-documents/${projectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        documentsList.innerHTML = '';
+                        
+                        if (Object.keys(data.documents).length === 0) {
+                            documentsList.innerHTML = '<p class="no-docs-message">No documents available for this project.</p>';
+                            return;
+                        }
+                        
+                        // Create document list
+                        const questions = [
+                            "Initial phase completion",
+                            "Required documentation",
+                            "Fund allocation",
+                            "Vendor selection",
+                            "Project execution",
+                            "Required approvals",
+                            "Timeline tracking",
+                            "Resource procurement",
+                            "Budget management",
+                            "Milestone reporting"
+                        ];
+                        
+                        const docList = document.createElement('ul');
+                        docList.className = 'documents-list';
+                        
+                        Object.entries(data.documents).forEach(([questionIndex, filename]) => {
+                            const li = document.createElement('li');
+                            li.className = 'document-item';
+                            
+                            const questionNum = parseInt(questionIndex) + 1;
+                            const questionText = questions[parseInt(questionIndex)];
+                            
+                            li.innerHTML = `
+                                <div class="document-info">
+                                    <span class="document-question">Q${questionNum}: ${questionText}</span>
+                                    <span class="document-filename"><i class="fas fa-file"></i> ${filename}</span>
+                                </div>
+                                <div class="document-actions">
+                                    <a href="/file-view/${filename}" target="_blank" class="view-doc-btn">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            `;
+                            
+                            docList.appendChild(li);
+                        });
+                        
+                        documentsList.appendChild(docList);
+                    } else {
+                        documentsList.innerHTML = '<p class="error-message">Failed to load documents. Please try again.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching documents:', error);
+                    documentsList.innerHTML = '<p class="error-message">An error occurred while loading documents.</p>';
+                });
+        }
+        
+        // Close documents modal
+        function closeDocumentsModal() {
+            const modal = document.getElementById('documentsModal');
+            modal.style.display = 'none';
+        }
+        
+        // Progress questions are not displayed in this view
+        
+        // Logout function
+        function logout() {
+            fetch('/logout', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    }
+                })
+                .catch(error => {
+                    console.error('Logout error:', error);
+                    showToast('Logout failed. Please try again.', 'error');
+                });
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            const documentsModal = document.getElementById('documentsModal');
+            const projectDetailsModal = document.getElementById('projectDetailsModal');
+            
+            if (event.target === documentsModal) {
+                closeDocumentsModal();
+            }
+            
+            if (event.target === projectDetailsModal) {
+                closeProjectDetailsModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GovTrack - Fund Allocation & Project Tracking</title>
+  <meta name="description" content="GovTrack is a real-time government fund allocation and project tracking platform for transparency and efficient governance." />
+  <meta name="author" content="GovTrack Team" />
+  <meta property="og:title" content="GovTrack" />
+  <meta property="og:description" content="Real-Time Government Fund Allocation & Project Tracking System" />
+  <meta property="og:type" content="website" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    :root {
+      --primary: #003366;
+      --accent: #007acc;
+      --bg: #f4f6f8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg);
+      color: #333;
+      scroll-behavior: smooth;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--primary), #005fa3);
+      color: white;
+      padding: 3rem 1rem 2rem;
+      text-align: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.8rem;
+    }
+
+    header p {
+      margin-top: 0.75rem;
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .main-login-button {
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .main-login-button a {
+      background-color: var(--accent);
+      color: white;
+      padding: 0.8rem 1.8rem;
+      font-size: 1.1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      transition: background-color 0.25s, transform 0.2s;
+      box-shadow: 0 4px 10px rgba(0, 122, 204, 0.2);
+    }
+
+    .main-login-button a:hover {
+      background-color: #005fa3;
+      transform: translateY(-2px);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 0 1rem;
+    }
+
+    section {
+      margin: 3rem 0;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      text-align: center;
+    }
+
+    .stat {
+      background-color: white;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      flex: 1 1 250px;
+      transition: transform 0.2s ease;
+    }
+
+    .stat:hover {
+      transform: translateY(-5px);
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      color: var(--primary);
+    }
+
+    .features ul, .use-cases ul, .how-it-works ol {
+      padding-left: 1.5rem;
+      line-height: 1.7;
+    }
+
+    footer {
+      background-color: var(--primary);
+      color: white;
+      text-align: center;
+      padding: 1.2rem 1rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2rem;
+      }
+      .stat {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GovTrack</h1>
+    <p>Real-Time Government Fund Allocation & Project Tracking System</p>
+  </header>
+
+  <div class="main-login-button">
+    <a href="/login" aria-label="Login to your GovTrack account">Login to Your Account</a>
+  </div>
+
+  <main>
+    <section class="stats">
+      <div class="stat">
+        <h2>$120 Cr+</h2>
+        <p>Funds Allocated</p>
+      </div>
+      <div class="stat">
+        <h2>450+</h2>
+        <p>Active Projects</p>
+      </div>
+      <div class="stat">
+        <h2>78%</h2>
+        <p>Completion Rate</p>
+      </div>
+    </section>
+
+    <section class="about">
+      <h2>About GovTrack</h2>
+      <p>
+        GovTrack is a unified digital governance platform that empowers transparency and efficiency in public spending. It streamlines budget allocation, milestone tracking, and public accountability through a role-based real-time dashboard.
+      </p>
+    </section>
+
+    <section class="features">
+      <h2>Key Features</h2>
+      <ul>
+        <li>✅ Real-time fund tracking and allocation</li>
+        <li>✅ Geo-tagged and phase-wise project updates</li>
+        <li>✅ Role-based secure access control</li>
+        <li>✅ Transparent dashboards for the public</li>
+        <li>✅ Auto-generated reports for audits and reviews</li>
+        <li>✅ Smart notifications and deadline alerts</li>
+      </ul>
+    </section>
+
+    <section class="use-cases">
+      <h2>Use Cases</h2>
+      <ul>
+        <li>🛣️ Monitor infrastructure projects (roads, bridges, public works)</li>
+        <li>🏥 Track healthcare funding and hospital modernization</li>
+        <li>🏫 Manage educational grants and school construction</li>
+        <li>💡 Improve utility services (water, electricity, sanitation)</li>
+      </ul>
+    </section>
+
+    <section class="how-it-works">
+      <h2>How It Works</h2>
+      <ol>
+        <li>1️⃣ Admins allocate funds via a secure portal</li>
+        <li>2️⃣ Officials update progress across phases</li>
+        <li>3️⃣ Ministers oversee and approve strategic reports</li>
+        <li>4️⃣ Public accesses updates via transparent dashboards</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <%= new Date().getFullYear() %> GovTrack. All rights reserved.</p>
+  </footer>
+</body>
+</html>

@@ -1,146 +1,916 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <style>
-        /* General Styles */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        /* Wrapper */
-        .wrapper {
-            display: flex;
-            height: 100%;
-        }
-
-        /* Sidebar Styles */
-        .sidebar {
-            width: 250px;
-            background-color: #2c3e50;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px 0;
-        }
-
-        .sidebar h2 {
-            text-align: center;
-        }
-
-        .sidebar .logo {
-            width: 120px;
-            margin-bottom: 20px;
-        }
-
-        .sidebar ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar ul li {
-            margin: 10px 0;
-        }
-
-        .sidebar ul li a {
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            display: block;
-        }
-
-        .sidebar ul li a:hover {
-            background-color: #1abc9c;
-            border-radius: 4px;
-        }
-
-        .social_media {
-            margin-top: auto;
-            text-align: center;
-        }
-
-        /* Main Content Styles */
-        .main_content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .main_content .header {
-            background-color: #ecf0f1;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header .notification button,
-        .header .profile button,
-        .header .log-out {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .header .notification i,
-        .header .profile i {
-            font-size: 1.2rem;
-            margin-right: 5px;
-        }
-
-        .header .profile span {
-            margin-left: 5px;
-        }
-
-        .header .log-out {
-            color: #e74c3c;
-        }
-
-        .content {
-            flex: 1;
-            padding: 20px;
-            background-color: #f9fafc;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Dashboard for government ministers">
+  <title>Minister Dashboard</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnsK0I2lw7YP3qhUthMBtlsiJ31WVkPrY"></script>
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js" defer></script>
+  <link rel="stylesheet" href="/minister.css">
+  
+  <style>
+    /* Project Map Styles */
+    .active-projects-map-container {
+      margin-bottom: 15px;
+      position: relative;
+    }
+    .project-info-box {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .project-info-box h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .project-info-box p {
+      margin: 5px 0;
+      color: #555;
+    }
+    .project-info-box .project-detail {
+      display: flex;
+      margin-bottom: 8px;
+    }
+    .project-info-box .label {
+      font-weight: bold;
+      min-width: 120px;
+    }
+    /* Google Maps Info Window Style */
+    .project-marker-info {
+      font-size: 14px;
+    }
+    .project-marker-info .project-name {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    /* Project Info Box Styles */
+    .project-status {
+      margin: 15px 0;
+    }
+    .progress-container {
+      width: 100%;
+      height: 10px;
+      background-color: #f3f3f3;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #2ecc71, #27ae60);
+      border-radius: 5px;
+      transition: width 0.5s ease-in-out;
+    }
+    .progress-text {
+      text-align: right;
+      font-size: 14px;
+      color: #7f8c8d;
+    }
+    .project-details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    .project-detail {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0;
+    }
+    .project-detail .label {
+      font-weight: bold;
+      color: #34495e;
+      margin-bottom: 5px;
+    }
+    .project-detail .label i {
+      margin-right: 5px;
+      color: #3498db;
+    }
+    /* Map Legend Styles */
+    .map-legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 10px;
+      padding: 5px;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 4px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+    }
+    .legend-marker {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .legend-marker.ongoing {
+      background: linear-gradient(90deg, #2ecc71, #27ae60);
+      border: 3px solid #2ecc71;
+    }
+    .legend-marker.completed {
+      background: linear-gradient(90deg, #3498db, #2980b9);
+      border: 3px solid #e74c3c;
+    }
+    
+    /* Profile Menu Custom Styles */
+    .profile-menu {
+      position: relative;
+    }
+    
+    .profile-icon {
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    
+    .profile-icon:hover {
+      transform: scale(1.1);
+    }
+    
+    .dropdown-menu {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      width: 180px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    
+    .profile-menu:hover .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    .dropdown-menu a {
+      display: flex;
+      align-items: center;
+      padding: 12px 15px;
+      text-decoration: none;
+      color: #333;
+      border-bottom: 1px solid #f1f1f1;
+      transition: background-color 0.2s;
+    }
+    
+    .dropdown-menu a:last-child {
+      border-bottom: none;
+    }
+    
+    .dropdown-menu a:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .dropdown-menu a i {
+      margin-right: 10px;
+      width: 20px;
+      text-align: center;
+    }
+    
+    .dropdown-menu.show {
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <div class="wrapper">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <h2>
-                <img src="image/LOGO.png" class="logo" alt="Logo">
-            </h2>
-            <ul>
-                <li class="home"><a href="#" class="nav-item" onclick="navigateToPage('home.html')">Home</a></li>
-                <li class="request"><a href="#" class="nav-item" onclick="navigateToPage('request.html')">Request</a></li>
-                <li class="history"><a href="#" class="nav-item" onclick="navigateToPage('history.html')">History</a></li>
-                <li class="notification"><a href="#" class="nav-item" onclick="navigateToPage('notification.html')">Notification</a></li>
-                <li class="logout"><a href="#" class="nav-item" onclick="confirmLogout()">Logout</a></li>
-            </ul>
-            <div class="social_media">
-                <p>© 2024 Company Name</p>
-            </div>
-        </div>
+<div class="wrapper">
+  <!-- Mobile Toggle -->
+  <div class="mobile-toggle" id="sidebarToggle">
+    <i class="fas fa-bars"></i>
+  </div>
+  
+  <div class="sidebar" id="sidebar">
+    <h2><img src="/images/logo.png" class="logo" alt="Logo"></h2>
+    <ul>
+      <li><a href="/minister-dashboard" class="active"><i class="fas fa-home"></i> Home</a></li>
+      <li><a href="/minister-request"><i class="fas fa-tasks"></i> Request</a></li>
+      <li><a href="/minister-project-status" ><i class="fas fa-chart-line"></i> Project Status</a></li>
+    </ul>
+  </div>
 
-        <!-- Main Content -->
-        <div class="main_content">
-            <
-
-            <div class="content">
-                <h1>Welcome to the Minister Dashboard!</h1>
-                <p>Use the sidebar to navigate between different sections.</p>
-            </div>
+  <div class="main-content">
+    <div class="top-header">
+      <h1>Minister Dashboard</h1>
+      <div class="profile-menu">
+        <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+        <div class="dropdown-menu">
+          <a href="/minister-profile"><i class="fas fa-user"></i> <%= user ? user.name : 'Profile' %></a>
+          <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
+      </div>
     </div>
 
+
+    <!-- Project and Fund Stats -->
+    <div class="stat-section">
+      <div class="section-header"><i class="fas fa-project-diagram"></i> Project & Fund Statistics</div>
+      <div class="stat-grid">
+        <% const projectStats = [
+          { icon: 'fa-clipboard-list', label: 'Total Projects', value: totalProjects, theme: 'project-theme-1' },
+          { icon: 'fa-check-circle', label: 'Active Projects', value: activeProjects, theme: 'project-theme-2' }
+        ]; %>
+        <% projectStats.forEach(stat => { %>
+          <div class="stat-card <%= stat.theme %>">
+            <h2><i class="fas <%= stat.icon %>"></i> <%= stat.label %></h2>
+            <p><%= stat.value %></p>
+          </div>
+        <% }) %>
+      </div>
+
+      <div class="stat-grid">
+        <% const fundStats = [
+          { icon: 'fa-dollar-sign', label: 'Total Fund', value: `$${totalFund.toLocaleString()}`, theme: 'fund-theme-1' },
+          { icon: 'fa-money-bill-wave', label: 'Allocated Fund', value: `$${allocatedFund.toLocaleString()}`, theme: 'fund-theme-2' },
+          { icon: 'fa-wallet', label: 'Remaining Fund', value: `$${remainingFund.toLocaleString()}`, theme: 'fund-theme-3' }
+        ]; %>
+        <% fundStats.forEach(stat => { %>
+          <div class="stat-card <%= stat.theme %>">
+            <h2><i class="fas <%= stat.icon %>"></i> <%= stat.label %></h2>
+            <p><%= stat.value %></p>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Department Fund Overview -->
+    <div class="stat-section">
+      <div class="section-header"><i class="fas fa-chart-pie"></i> Department-wise Fund Overview</div>
+      <div class="department-card-container">
+        <% departmentFunds.forEach(dept => { 
+           let ministryClass = '';
+           if (dept.department === "Ministry of Finance") ministryClass = 'ministry-finance';
+           else if (dept.department === "Ministry of Transport") ministryClass = 'ministry-transport';
+           else if (dept.department === "Ministry of Health") ministryClass = 'ministry-health';
+           else if (dept.department === "Ministry of Agriculture") ministryClass = 'ministry-agriculture';
+           else if (dept.department === "Ministry of Education") ministryClass = 'ministry-education';
+        %>
+          <div class="department-card <%= ministryClass %>">
+            <h3>
+              <% 
+              let deptIcon = 'fa-building';
+              
+              if (dept.department === "Ministry of Finance") {
+                deptIcon = 'fa-money-bill-trend-up';
+              }
+              else if (dept.department === "Ministry of Transport") {
+                deptIcon = 'fa-car';
+              }
+              else if (dept.department === "Ministry of Health") {
+                deptIcon = 'fa-hospital';
+              }
+              else if (dept.department === "Ministry of Agriculture") {
+                deptIcon = 'fa-leaf';
+              }
+              else if (dept.department === "Ministry of Education") {
+                deptIcon = 'fa-graduation-cap';
+              }
+              %>
+              <i class="fas <%= deptIcon %>"></i> <%= dept.department %>
+            </h3>
+            <div class="dept-fund-info">
+              <p><i class="fas fa-coins"></i> <span>Used:</span> $<%= (dept.usedFund || 0).toLocaleString() %></p>
+              <p><i class="fas fa-wallet"></i> <span>Remaining:</span> $<%= (dept.remainingFund || 0).toLocaleString() %></p>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Active Projects Map -->
+    <div class="stat-section">
+      <div class="section-header"><i class="fas fa-map-marked-alt"></i> Projects Location Map</div>
+      <div class="active-projects-map-container">
+        <div id="projectMap" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+        <div class="map-legend">
+          <div class="legend-item">
+            <span class="legend-marker ongoing"></span> Ongoing Projects
+          </div>
+          <div class="legend-item">
+            <span class="legend-marker completed"></span> Completed Projects
+          </div>
+        </div>
+      </div>
+      <div id="projectInfoBox" class="project-info-box">
+        <h3>Project Information</h3>
+        <p>Click on a marker on the map to see project details</p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="stat-section">
+      <div class="section-header"><i class="fas fa-chart-pie"></i> Fund Allocation & Usage</div>
+      <div class="charts-container">
+        <div class="chart-card">
+          <h2>Fund Allocation</h2>
+          <canvas id="fundChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h2>Fund Usage</h2>
+          <canvas id="usageChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-section">
+      <div class="section-header"><i class="fas fa-chart-bar"></i> Department Fund Usage</div>
+      <div class="chart-card">
+        <canvas id="departmentFundChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Dropdown & Time Trend Line Chart -->
+    <div class="stat-section">
+      <h2><i class="fas fa-chart-line"></i> Fund Trend Over Time</h2>
+      <select id="timeFilter">
+        <option value="day">Day</option>
+        <option value="week">Week</option>
+        <option value="month">Month</option>
+        <option value="year">Year</option>
+      </select>
+      <canvas id="fundLineChart" height="150"></canvas>
+    </div>
+
+    <!-- Multi-Project Timeline Chart -->
+    <div class="stat-section">
+      <h2><i class="fas fa-project-diagram"></i> Project Allocation Timeline</h2>
+      <div class="chart-filters">
+        <select id="projectTimeRange">
+          <option value="30">Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+          <option value="180">Last 180 Days</option>
+          <option value="365">Last Year</option>
+        </select>
+        <button id="refreshProjectChart" class="btn-refresh"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
+      <div class="chart-container" style="position: relative; height: 350px;">
+        <canvas id="projectTimelineChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Latest Sections -->
+    <div class="latest-section">
+      <h2><i class="fas fa-clock"></i> Latest Pending Requests</h2>
+      <div id="pending-projects">
+        <% latestPendingRequests.forEach(request => { %>
+          <div class="latest-item"><strong><%= request.name %></strong> - <%= request.date %></div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="latest-section">
+      <h2><i class="fas fa-spinner"></i> Latest Ongoing Projects</h2>
+      <div id="ongoing-projects">
+        <% latestOngoingProjects.forEach(project => { %>
+          <div class="latest-item"><strong><%= project.name %></strong> - Progress: <%= project.progress %>%</div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="latest-section">
+      <h2><i class="fas fa-check-circle"></i> Latest Completed Projects</h2>
+      <div id="completed-projects">
+        <% if (latestCompletedProjects.length > 0) { %>
+          <% latestCompletedProjects.forEach(project => { %>
+            <div class="latest-item"><strong><%= project.name %></strong> - Completed on: <%= project.completedDate %></div>
+          <% }) %>
+        <% } else { %>
+          <div class="latest-item">No completed projects available.</div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  // Initialize a global map to store project data for quick access
+  let projectsMap = new Map();
+  
+  // Preload all frequently accessed DOM elements to improve performance
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Socket.IO connection
+    const socket = io();
+    
+    // Listen for project progress updates
+    socket.on('project-progress-update', function(data) {
+      console.log('Received progress update:', data);
+      
+      // If this project is in our map, update its progress
+      if (projectsMap.has(data.projectId)) {
+        const project = projectsMap.get(data.projectId);
+        project.progress = data.progress;
+        
+        // Update project info box if this project is currently selected
+        const projectInfoBox = document.getElementById('projectInfoBox');
+        const projectTitle = projectInfoBox.querySelector('h3');
+        
+        if (projectTitle && projectTitle.textContent === project.projectName) {
+          const progressElement = projectInfoBox.querySelector('.project-detail:nth-child(3) div:last-child');
+          if (progressElement) {
+            progressElement.textContent = `${project.progress}%`;
+          }
+        }
+      }
+    });
+    
+    window.timeFilter = document.getElementById('timeFilter');
+    window.projectTimeRange = document.getElementById('projectTimeRange');
+    window.refreshProjectChart = document.getElementById('refreshProjectChart');
+    
+    // Initialize charts on DOM loaded
+    initCharts();
+    
+    // Set up event listeners
+    if (timeFilter) {
+      timeFilter.addEventListener('change', e => {
+        fetchAndRender(e.target.value);
+      });
+    }
+    
+    if (refreshProjectChart) {
+      refreshProjectChart.addEventListener('click', () => {
+        const days = projectTimeRange.value;
+        fetchProjectTimeline(days);
+      });
+    }
+    
+    // Initial data fetches
+    fetchAndRender('day');
+    fetchProjectTimeline(30);
+    
+    // Profile dropdown functionality
+    const profileIcon = document.querySelector('.profile-icon');
+    const dropdownMenu = document.querySelector('.dropdown-menu');
+    const profileMenu = document.querySelector('.profile-menu');
+    
+    if (profileIcon && dropdownMenu) {
+        // Click functionality (for mobile compatibility)
+        profileIcon.addEventListener('click', function(event) {
+            event.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!profileMenu.contains(event.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+        
+        // Add tooltip/title to show username on hover
+        if (profileIcon.getAttribute('aria-label') === 'User menu') {
+            const username = '<%= user ? user.name : "User" %>';
+            profileIcon.setAttribute('title', username);
+        }
+    }
+
+    // Mobile sidebar toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+    }
+    
+    // Initialize map
+    initializeProjectMap();
+  });
+
+  const departmentData = <%- JSON.stringify(departmentFunds) %>;
+  const departmentNames = departmentData.map(d => d.department);
+  const usedFunds = departmentData.map(d => d.usedFund);
+  const remainingFunds = departmentData.map(d => d.remainingFund);
+
+  // Store colors in a variable to avoid hardcoding and duplication
+  const CHART_COLORS = {
+    fundAllocation: ['#3498db', '#e74c3c', '#2ecc71'],
+    usage: ['#f39c12', '#8e44ad'],
+    department: ['#e74c3c', '#2ecc71'],
+    palette: [
+      '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
+      '#1abc9c', '#d35400', '#34495e', '#16a085', '#c0392b',
+      '#27ae60', '#2980b9', '#8e44ad', '#f1c40f', '#e67e22'
+    ]
+  };
+
+  function logout() {
+    fetch('/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = '/login';
+      }
+    })
+    .catch(error => console.error('Error:', error));
+  }
+
+  const data = {
+    allocatedFund: <%= allocatedFund %>,
+    remainingFund: <%= remainingFund %>,
+    totalFund: <%= totalFund %>,
+    highestFundedProjectAmount: <%= highestFundedProjectAmount %>,
+    highestFundedProjectName: "<%= highestFundedProjectName %>",
+    lowestFundedProjectAmount: <%= lowestFundedProjectAmount %>,
+    lowestFundedProjectName: "<%= lowestFundedProjectName %>"
+  };
+
+  function initializeChart(chartId, chartType, labels, datasets) {
+    const element = document.getElementById(chartId);
+    if (!element) return null;
+    
+    return new Chart(element, {
+      type: chartType,
+      data: {
+        labels,
+        datasets
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+  
+  function initCharts() {
+    // Doughnut Charts
+    initializeChart('fundChart', 'doughnut', ['Allocated', 'Remaining', 'Total'], [{
+      data: [data.allocatedFund, data.remainingFund, data.totalFund],
+      backgroundColor: CHART_COLORS.fundAllocation
+    }]);
+
+    initializeChart('usageChart', 'doughnut', [
+      `${data.highestFundedProjectName} - $${data.highestFundedProjectAmount}`,
+      `${data.lowestFundedProjectName} - $${data.lowestFundedProjectAmount}`
+    ], [{
+      data: [data.highestFundedProjectAmount, data.lowestFundedProjectAmount],
+      backgroundColor: CHART_COLORS.usage
+    }]);
+
+    // Bar Chart
+    initializeChart('departmentFundChart', 'bar', departmentNames, [
+      {
+        label: 'Used Fund',
+        data: usedFunds,
+        backgroundColor: CHART_COLORS.department[0]
+      },
+      {
+        label: 'Remaining Fund',
+        data: remainingFunds,
+        backgroundColor: CHART_COLORS.department[1]
+      }
+    ]);
+  }
+
+  // Fund Line Chart (Time trend)
+  let chart;
+  async function fetchAndRender(type = 'day') {
+    try {
+      const res = await fetch(`/fund-data?type=${type}`);
+      const result = await res.json();
+
+      const labels = result.map(item =>
+        typeof item._id === "object" ? `${item._id.year}-${String(item._id.month || '').padStart(2, '0')}` : item._id
+      );
+      const values = result.map(item => item.totalAllocated);
+
+      const ctx = document.getElementById('fundLineChart');
+      if (!ctx) return;
+      
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `Funds Allocated (${type})`,
+            data: values,
+            borderColor: '#2980b9',
+            backgroundColor: 'rgba(52, 152, 219, 0.3)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching fund data:', error);
+    }
+  }
+
+  // Multi-project timeline chart
+  let projectTimelineChart;
+  
+  async function fetchProjectTimeline(days = 30) {
+    try {
+      const response = await fetch(`/project-timeline-data?days=${days}`);
+      const data = await response.json();
+      
+      const ctx = document.getElementById('projectTimelineChart');
+      if (!ctx) return;
+      
+      if (projectTimelineChart) {
+        projectTimelineChart.destroy();
+      }
+      
+      const datasets = data.projects.map((project, index) => ({
+        label: project.name,
+        data: project.allocations.map(a => ({
+          x: new Date(a.date),
+          y: a.amount
+        })),
+        borderColor: CHART_COLORS.palette[index % CHART_COLORS.palette.length],
+        backgroundColor: 'transparent',
+        pointRadius: 5,
+        pointHoverRadius: 8
+      }));
+      
+      projectTimelineChart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'day',
+                displayFormats: {
+                  day: 'MMM d'
+                }
+              },
+              title: {
+                display: true,
+                text: 'Date'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Fund Amount ($)'
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                title: function(tooltipItems) {
+                  return new Date(tooltipItems[0].raw.x).toLocaleDateString();
+                },
+                label: function(context) {
+                  return `${context.dataset.label}: $${context.raw.y.toLocaleString()}`;
+                }
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching project timeline data:', error);
+    }
+  }
+  
+  function getRandomColor() {
+    return CHART_COLORS.palette[Math.floor(Math.random() * CHART_COLORS.palette.length)];
+  }
+  
+  // Initialize the active projects map
+  let map;
+  let markers = [];
+  let currentInfoWindow = null;
+  
+  function initializeProjectMap() {
+    // Create the map centered on Nepal
+    map = new google.maps.Map(document.getElementById('projectMap'), {
+      center: { lat: 27.7172, lng: 85.3240 },
+      zoom: 7,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    });
+    
+    // Fetch active project data with locations
+    fetchActiveProjectLocations();
+  }
+  
+  // Fetch active projects with location data
+  async function fetchActiveProjectLocations() {
+    try {
+      const response = await fetch('/active-project-locations');
+      const data = await response.json();
+      
+      if (data.projects && data.projects.length > 0) {
+        addProjectsToMap(data.projects);
+      } else {
+        document.getElementById('projectInfoBox').innerHTML = '<p>No active projects with location data available.</p>';
+      }
+    } catch (error) {
+      console.error('Error fetching active project locations:', error);
+      document.getElementById('projectInfoBox').innerHTML = '<p>Error loading project data.</p>';
+    }
+  }
+  
+  // Add projects to the map
+  function addProjectsToMap(projects) {
+    const bounds = new google.maps.LatLngBounds();
+    const projectInfoBox = document.getElementById('projectInfoBox');
+    
+    // Clear existing projects map before adding new ones
+    projectsMap.clear();
+    
+    // Get department color for markers
+    function getMarkerColor(department) {
+      const colors = {
+        'Ministry of Finance': '#2ecc71',
+        'Ministry of Transport': '#e74c3c',
+        'Ministry of Health': '#9b59b6',
+        'Ministry of Agriculture': '#f39c12',
+        'Ministry of Education': '#3498db'
+      };
+      return colors[department] || '#2c3e50';
+    }
+    
+    projects.forEach(project => {
+      // Store project in map for quick access
+      projectsMap.set(project._id, project);
+      
+      if (project.location && project.location.coordinates) {
+        // GeoJSON coordinates are [longitude, latitude]
+        const lat = project.location.coordinates[1];
+        const lng = project.location.coordinates[0];
+        
+        if (lat && lng) {
+          const position = new google.maps.LatLng(lat, lng);
+          
+          // Choose marker color based on project status
+          let markerColor;
+          let strokeColor;
+          let strokeWeight;
+          
+          if (project.progressStatus === "Completed") {
+            markerColor = '#3498db'; // Blue for completed projects
+            strokeColor = '#e74c3c'; // Red border for completed
+            strokeWeight = 3; // Thicker border
+          } else {
+            markerColor = getMarkerColor(project.department); // Department colors for ongoing
+            strokeColor = '#2ecc71'; // Green border for ongoing
+            strokeWeight = 3; // Thicker border
+          }
+          
+          // Create a marker
+          const marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            title: project.projectName,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              fillColor: markerColor,
+              fillOpacity: 0.8,
+              strokeWeight: strokeWeight,
+              strokeColor: strokeColor,
+              scale: 8
+            }
+          });
+          
+          // Add marker to markers array
+          markers.push(marker);
+          
+          // Format the info window content with status
+          const infoContent = `
+            <div class="project-marker-info">
+              <div class="project-name">${project.projectName}</div>
+              <div>${project.department}</div>
+              <div style="color: ${project.progressStatus === 'Completed' ? '#3498db' : '#27ae60'};">
+                <i class="fas ${project.progressStatus === 'Completed' ? 'fa-check-circle' : 'fa-spinner fa-spin'}"></i> 
+                ${project.progressStatus}
+              </div>
+            </div>
+          `;
+
+          // Create info window
+          const infoWindow = new google.maps.InfoWindow({
+            content: infoContent
+          });
+          
+          // Add click listener to show info window
+          marker.addListener('click', function() {
+            // Close previous info window if open
+            if (currentInfoWindow) {
+              currentInfoWindow.close();
+            }
+            
+            // Open new info window
+            infoWindow.open(map, marker);
+            currentInfoWindow = infoWindow;
+            
+            // Update project info box
+            projectInfoBox.innerHTML = `
+              <h3>${project.projectName}</h3>
+              <div class="project-status">
+                <div class="progress-container">
+                  <div class="progress-bar" style="width: ${project.progress || 0}%"></div>
+                </div>
+                <div class="progress-text">
+                  ${project.progressStatus === 'Completed' ? 
+                    '<i class="fas fa-check-circle" style="color: #3498db;"></i> Completed' : 
+                    `${project.progress || 0}% Complete`
+                  }
+                </div>
+              </div>
+              <div class="project-details-grid">
+                <div class="project-detail">
+                  <div class="label"><i class="fas fa-building"></i> Department:</div>
+                  <div>${project.department}</div>
+                </div>
+                <div class="project-detail">
+                  <div class="label"><i class="fas fa-dollar-sign"></i> Allocated Fund:</div>
+                  <div>$${project.allocatedFund.toLocaleString()}</div>
+                </div>
+                <div class="project-detail">
+                  <div class="label"><i class="fas fa-calendar-day"></i> Start Date:</div>
+                  <div>${project.startDateFormatted}</div>
+                </div>
+                ${project.progressStatus === 'Completed' ? 
+                  `<div class="project-detail">
+                    <div class="label"><i class="fas fa-flag-checkered"></i> Completed On:</div>
+                    <div>${project.completionDateFormatted}</div>
+                  </div>` : 
+                  `<div class="project-detail">
+                    <div class="label"><i class="fas fa-calendar-check"></i> Deadline:</div>
+                    <div>${project.projectDeadlineFormatted}</div>
+                  </div>`
+                }
+              </div>
+            `;
+          });
+          
+          // Extend map bounds to include this marker
+          bounds.extend(position);
+        }
+      }
+    });
+    
+    // If we have valid markers, fit the map to show all markers
+    if (markers.length > 0) {
+      map.fitBounds(bounds);
+      
+      // If only one marker, zoom out slightly
+      if (markers.length === 1) {
+        const listener = google.maps.event.addListener(map, 'idle', function() {
+          if (map.getZoom() > 12) map.setZoom(12);
+          google.maps.event.removeListener(listener);
+        });
+      }
+    }
+  }
+</script>
+<script src="/js/socket-notification.js" defer></script>
 </body>
 </html>

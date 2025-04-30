@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Project progress tracking for government officials">
+  <title>Project Progress | Dashboard</title>
+
+  <!-- Critical resources -->
+  <link rel="preload" href="/officials_project_progress.css" as="style">
+  <link rel="preload" href="/js/progress.js" as="script">
+  
+  <!-- Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+
+  <!-- Styles -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/officials_project_progress.css">
+  
+  <!-- Meta -->
+  <meta name="theme-color" content="#4361ee">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<body>
+  <div class="wrapper">
+    <!-- Mobile Toggle -->
+    <div class="mobile-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </div>
+    
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <h2>
+        <img src="/images/logo.png" class="logo" alt="Logo" width="80" height="80">
+      </h2>
+      <ul>
+        <li><a href="/officials-dashboard"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="/officials-project"><i class="fas fa-tasks"></i> Project</a></li>
+        <li><a href="/officials-project-progress" class="active"><i class="fas fa-chart-line"></i> Project Progress</a></li>
+        <li><a href="/officials-notification"><i class="fas fa-bell"></i> Notification</a></li>
+        <li><a href="/officials-bill"><i class="fas fa-file-invoice-dollar"></i> Bill</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="top-header">
+        <h1>Project Progress Tracking</h1>
+        <div class="profile-menu">
+          <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+          <div class="dropdown-menu">
+            <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+            <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
+        </div>
+      </header>
+
+      <!-- Projects Table -->
+      <table>
+        <caption class="sr-only">Project Progress Tracking Table</caption>
+        <thead>
+          <tr>
+            <th scope="col"><i class="fas fa-clipboard-list"></i> Project Name</th>
+            <th scope="col"><i class="fas fa-dollar-sign"></i> Allocated Fund</th>
+            <th scope="col"><i class="fas fa-info-circle"></i> Status</th>
+            <th scope="col"><i class="fas fa-tasks"></i> Progress</th>
+            <th scope="col"><i class="fas fa-check-circle"></i> Progress Status</th>
+            <th scope="col"><i class="fas fa-edit"></i> Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% projects.forEach(project => { %>
+            <tr>
+              <td><%= project.projectName %></td>
+              <td>$<%= project.allocatedFund.toLocaleString() %></td>
+              <td>
+                <% if (project.status === "Approved") { %>
+                  <div class="status-approved"><i class="fas fa-check-circle"></i> Approved</div>
+                <% } else if (project.status === "Rejected") { %>
+                  <div class="status-rejected"><i class="fas fa-times-circle"></i> Rejected</div>
+                <% } else { %>
+                  <div class="status-pending"><i class="fas fa-hourglass-half"></i> Pending</div>
+                <% } %>
+              </td>
+              <td>
+                <div class="progress-container">
+                  <progress id="progress-bar-<%= project._id %>" value="<%= project.progress %>" max="100"></progress>
+                  <span id="progress-text-<%= project._id %>"><%= project.progress %>%</span>
+                </div>
+              </td>
+              <td id="progress-status-<%= project._id %>">
+                <% if (project.progress === 100) { %>
+                  <div class="status-approved"><i class="fas fa-flag-checkered"></i> Completed</div>
+                <% } else if (project.progress > 0) { %>
+                  <div class="status-pending"><i class="fas fa-spinner"></i> Ongoing</div>
+                <% } else { %>
+                  <div class="status-rejected"><i class="fas fa-clock"></i> Not Started</div>
+                <% } %>
+              </td>
+              <td>
+                <% if (project.status === "Approved") { %>
+                  <% if (project.progress < 100) { %>
+                    <button type="button" onclick="openModal('<%= project._id %>')">
+                      <i class="fas fa-edit"></i> Update Progress
+                    </button>
+                  <% } else { %>
+                    <span class="completed-tag"><i class="fas fa-check"></i> Completed</span>
+                  <% } %>
+                <% } else { %>
+                  <span class="disabled-tag"><i class="fas fa-lock"></i> Locked</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div id="progressModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="modalTitle" hidden>
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2 id="modalTitle"><i class="fas fa-tasks"></i> Update Project Progress</h2>
+      <div id="modal-loading"><i class="fas fa-spinner fa-spin"></i> Loading project details...</div>
+      <form id="progressForm">
+        <div id="questionsContainer"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn-submit" onclick="saveProgress()">
+            <i class="fas fa-save"></i> Update Progress
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" role="alert" aria-live="assertive"></div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script>
+    // Profile dropdown functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const profileIcon = document.querySelector('.profile-icon');
+      const dropdownMenu = document.querySelector('.dropdown-menu');
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebar = document.getElementById('sidebar');
+      
+      // Profile dropdown
+      if (profileIcon && dropdownMenu) {
+        profileIcon.addEventListener('click', function() {
+          dropdownMenu.classList.toggle('show');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+          if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+            dropdownMenu.classList.remove('show');
+          }
+        });
+      }
+      
+      // Mobile sidebar toggle
+      if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+          sidebar.classList.toggle('active');
+        });
+      }
+    });
+  </script>
+
+  <script src="/js/progress.js" defer></script>
+  <script src="/js/socket-notification.js" defer></script>
+</body>
+</html>

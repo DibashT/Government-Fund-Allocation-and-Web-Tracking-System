@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="User management for admin dashboard">
+    <title>Users | Admin Dashboard</title>
+    
+    <!-- Styles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/users.css">
+    
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#usersTable').DataTable();
+            
+            // Toggle profile dropdown menu
+            $('.profile-icon').click(function() {
+                $('.dropdown-menu').toggleClass('show');
+            });
+            
+            // Toggle sidebar on mobile
+            $('#sidebarToggle').click(function() {
+                $('#sidebar').toggleClass('active');
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
+        <div class="sidebar" id="sidebar">
+            <h2><img src="images/logo.png" class="logo" alt="Dashboard Logo"></h2>
+            <ul>
+                <li><a href="/admin-dashboard"><i class="fas fa-home"></i> <span>Home</span></a></li>
+                <li><a href="/admin-request"><i class="fas fa-tasks"></i> <span>Request</span></a></li>
+                <li><a href="/admin-users" class="active"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                <li><a href="/admin-history"><i class="fas fa-history"></i> <span>History</span></a></li>
+                <li><a href="/admin-notifications"><i class="fas fa-bell"></i> <span>Notification</span></a></li>
+            </ul>
+        </div>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1>User Management</h1>
+                
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" tabindex="0"></i>
+                    <div class="dropdown-menu">
+                        <a href="/admin-profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Users Content -->
+            <section class="content">
+                <div class="section-header">
+                    <i class="fas fa-users"></i> User Directory
+                    <div class="action-buttons">
+                        <a href="/add-users" class="add-user-btn"><i class="fas fa-user-plus"></i> Add User</a>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="table-container">
+                    <table id="usersTable" class="display">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-user"></i> Name</th>
+                                <th><i class="fas fa-envelope"></i> Email</th>
+                                <th><i class="fas fa-phone"></i> Phone</th>
+                                <th><i class="fas fa-user-tag"></i> Role</th>
+                                <th><i class="fas fa-toggle-on"></i> Status</th>
+                                <th><i class="fas fa-sign-in-alt"></i> Last Login</th>
+                                <th><i class="fas fa-calendar-alt"></i> Created At</th>
+                                <th><i class="fas fa-cog"></i> Actions</th>
+                            </tr>
+                        </thead>                       
+                        <tbody>
+                            <% if (users.length > 0) { %>
+                                <% users.forEach((user, index) => { %>
+                                    <tr>
+                                        <td><%= user.name %></td>
+                                        <td><%= user.email %></td>
+                                        <td><%= user.phone %></td>
+                                        <td>
+                                            <span class="role-badge <%= user.role.toLowerCase().replace(' ', '-') %>">
+                                                <%= user.role %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <% if (user.isActive) { %>
+                                                <span class="status-active">Active</span>
+                                            <% } else { %>
+                                                <span class="status-inactive">Inactive</span>
+                                            <% } %>
+                                        </td>                                                                        
+                                        <td>
+                                            <% if (user.lastLogin && !isNaN(new Date(user.lastLogin))) { %>
+                                                <%= new Date(user.lastLogin).toLocaleString() %>
+                                            <% } else { %>
+                                                Never
+                                            <% } %>
+                                        </td>                                    
+                                        <td>
+                                            <%= new Date(user.createdAt).toLocaleDateString() %>
+                                        </td>
+                                        <td class="actions">
+                                            <a href="/edit-user/<%= user._id %>" class="btn-edit">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <button class="btn-delete" onclick="deleteUser('<%= user._id %>')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="8" class="no-data">
+                                        <div class="no-data-message">
+                                            <i class="fas fa-users-slash"></i>
+                                            <p>No users found</p>
+                                            <small>Add users to get started</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% } %>                          
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>  
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                fetch(`/delete-user/${userId}`, {
+                    method: 'POST',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Error deleting user');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            window.logout = function() {
+                window.location.href = '/logout';
+            };
+        });
+    </script>
+</body>
+</html>

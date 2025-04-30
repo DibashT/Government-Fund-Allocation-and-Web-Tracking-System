@@ -1,0 +1,60 @@
+@import 'auth-common.css';
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.checkbox-container input {
+  margin-right: 0.5rem;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+}
+
+.checkbox-container label {
+  margin-bottom: 0;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.links-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  font-size: 0.95rem;
+}
+
+.links-container a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.links-container a:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.divider::before {
+  margin-right: 0.75rem;
+}
+
+.divider::after {
+  margin-left: 0.75rem;
+}

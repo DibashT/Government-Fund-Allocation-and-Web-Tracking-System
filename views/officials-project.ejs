@@ -3,85 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="officials-project.css">
+    <meta name="description" content="Project submission form for government officials">
+    <title>Project Submission | Dashboard</title>
+
+    <!-- Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     
+    <!-- Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" href="/officials-project.css">
+    
+    <!-- Scripts (deferred) -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAnsK0I2lw7YP3qhUthMBtlsiJ31WVkPrY&libraries=places" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+    <script src="/socket.io/socket.io.js" defer></script>
 </head>
 <body>
     <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+        
         <!-- Sidebar -->
-        <div class="sidebar">
+        <nav class="sidebar" id="sidebar">
             <h2>
-                <img src="image/LOGO.png" class="logo" alt="Logo">
+                <img src="/images/logo.png" class="logo" alt="Logo">
             </h2>
             <ul>
-                <li><a href="/officials-dashboard">Home</a></li>
-                <li><a href="/officials-project">Project</a></li>
-                <li><a href="/notification">Notification</a></li>
-                <li><a href="/logout">Logout</a></li>
+                <li><a href="/officials-dashboard"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="/officials-project" class="active"><i class="fas fa-tasks"></i> Project</a></li>
+                <li><a href="/officials-project-progress"><i class="fas fa-chart-line"></i> Project Progress</a></li>
+                <li><a href="/officials-notification"><i class="fas fa-bell"></i> Notification</a></li>
+                <li><a href="/officials-bill"><i class="fas fa-file-invoice-dollar"></i> Bill</a></li>
             </ul>
-        </div>
+        </nav>
 
         <!-- Main Content -->
-        <div class="main-content">
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <h1>Project Submission</h1>
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <div class="dropdown-menu">
+                        <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </header>
+
+            <% if (typeof query !== 'undefined' && query.success) { %>
+                <div id="toast" class="toast success-toast" role="alert">
+                    <%= query.success %>
+                </div>
+            <% } else if (typeof query !== 'undefined' && query.error) { %>
+                <div id="toast" class="toast error-toast" role="alert">
+                    <%= query.error %>
+                </div>
+            <% } %>
+            
             <div class="content">
-              <div class="form-container">
-                <h1>Project Form</h1>
-                <form action="/submit-project" method="POST">
-                    <!-- Project Name -->
-                    <div class="form-group">
-                        <label for="project-name">Project Name</label>
-                        <input type="text" id="project-name" name="projectName" placeholder="Enter project name" required>
+                <div class="stat-section">
+                    <div class="section-header"><i class="fas fa-file-alt"></i> Project Submission Form</div>
+                    <div class="form-container">
+                        <form action="/submit-project" method="POST" enctype="multipart/form-data" class="modern-form" id="project-form">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="project-name"><i class="fas fa-file-signature"></i> Project Name</label>
+                                    <input type="text" id="project-name" name="projectName" placeholder="Enter project name" required class="modern-input">
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="allocated-fund"><i class="fas fa-dollar-sign"></i> Allocated Fund</label>
+                                    <input type="number" id="allocated-fund" name="allocatedFund" placeholder="Enter allocated fund" required class="modern-input">
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="department"><i class="fas fa-building"></i> Department</label>
+                                    <select id="department" name="department" required class="modern-select">
+                                        <option value="">Select a department</option>
+                                        <option value="Ministry of Education">Ministry of Education</option>
+                                        <option value="Ministry of Health">Ministry of Health</option>
+                                        <option value="Ministry of Transport">Ministry of Transport</option>
+                                        <option value="Ministry of Agriculture">Ministry of Agriculture</option>
+                                        <option value="Ministry of Finance">Ministry of Finance</option>
+                                    </select>
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="start-date"><i class="fas fa-calendar-alt"></i> Start Date</label>
+                                    <input type="date" id="start-date" name="startDate" required class="modern-input date-input">
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="deadline"><i class="fas fa-hourglass-end"></i> Project Deadline</label>
+                                    <input type="date" id="deadline" name="projectDeadline" required class="modern-input date-input">
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="details"><i class="fas fa-info-circle"></i> Project Details</label>
+                                    <textarea id="details" name="projectDetails" rows="4" placeholder="Enter project details" required class="modern-input"></textarea>
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="projectFile"><i class="fas fa-paperclip"></i> Attach File</label>
+                                    <div class="file-upload-container">
+                                        <input type="file" id="projectFile" name="projectFile" accept=".pdf,.doc,.docx,.jpg,.png" required class="file-upload">
+                                        <label for="projectFile" class="file-upload-label"><i class="fas fa-cloud-upload-alt"></i> Choose File</label>
+                                        <span class="file-name">No file chosen</span>
+                                    </div>
+                                    <div class="allowed-types">
+                                        <small><i class="fas fa-info-circle"></i> Allowed file types: PDF, DOC, DOCX, JPG, PNG </small>
+                                    </div>
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label><i class="fas fa-map-marked-alt"></i> Choose Location on Map</label>
+                                    <div id="map" class="modern-map"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="latitude"><i class="fas fa-map-pin"></i> Latitude</label>
+                                    <input type="text" id="latitude" name="latitude" readonly required class="modern-input">
+                                    <div class="input-feedback"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="longitude"><i class="fas fa-map-pin"></i> Longitude</label>
+                                    <input type="text" id="longitude" name="longitude" readonly required class="modern-input">
+                                    <div class="input-feedback"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <button type="submit" class="modern-button"><i class="fas fa-paper-plane"></i> Submit Project</button>
+                            </div>
+                        </form>
                     </div>
-            
-                    <!-- Allocated Fund -->
-                    <div class="form-group">
-                        <label for="allocated-fund">Allocated Fund</label>
-                        <input type="number" id="allocated-fund" name="allocatedFund" placeholder="Enter allocated fund" required>
-                    </div>
-            
-                    <!-- Department Selection -->
-                    <div class="form-group">
-                        <label for="department">Department</label>
-                        <select id="department" name="department" required>
-                            <option value="">Select Department</option>
-                            <option value="education">Ministry of Education</option>
-                            <option value="health">Ministry of Health</option>
-                            <option value="transport">Ministry of Transport</option>
-                            <option value="agriculture">Ministry of Agriculture</option>
-                            <option value="finance">Ministry of Finance</option>
-                        </select>
-                    </div>
-            
-                    <!-- Start Date -->
-                    <div class="form-group">
-                        <label for="start-date">Start Date</label>
-                        <input type="date" id="start-date" name="startDate" required>
-                    </div>
-            
-                    <!-- Project Deadline -->
-                    <div class="form-group">
-                        <label for="deadline">Project Deadline</label>
-                        <input type="date" id="deadline" name="projectDeadline" required>
-                    </div>
-            
-                    <!-- Project Details -->
-                    <div class="form-group">
-                        <label for="details">Project Details</label>
-                        <textarea id="details" name="projectDetails" rows="4" placeholder="Enter project details" required></textarea>
-                    </div>
-            
-                    <!-- Submit Button -->
-                    <div class="form-group">
-                        <button type="submit">Submit Project</button>
-                    </div>
-                </form>
+                </div>
             </div>
-            </div>
-        </div>
+        </main>
     </div>
 
-
+    <div id="toast-container"></div>
+    
+    <!-- Scripts -->
+    <script src="/js/socket-notification.js" defer></script>
+    <script src="/js/officials-project.js" defer></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile sidebar toggle
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Profile dropdown functionality
+            const profileIcon = document.querySelector('.profile-icon');
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            
+            if (profileIcon && dropdownMenu) {
+                profileIcon.addEventListener('click', function() {
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                        dropdownMenu.classList.remove('show');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
