@@ -91,7 +91,7 @@
 
                                 <div class="form-group full-width">
                                     <label for="department"><i class="fas fa-building"></i> Department</label>
-                                    <select id="department" name="department" required class="modern-select">
+                                    <select id="department" name="department" required class="modern-input">
                                         <option value="">Select a department</option>
                                         <option value="Ministry of Education">Ministry of Education</option>
                                         <option value="Ministry of Health">Ministry of Health</option>
@@ -163,39 +163,10 @@
 
     <div id="toast-container"></div>
     
-    <!-- Scripts -->
-    <script src="/js/socket-notification.js" defer></script>
-    <script src="/js/officials-project.js" defer></script>
+
     
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mobile sidebar toggle
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.getElementById('sidebar');
-            
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('active');
-                });
-            }
-            
-            // Profile dropdown functionality
-            const profileIcon = document.querySelector('.profile-icon');
-            const dropdownMenu = document.querySelector('.dropdown-menu');
-            
-            if (profileIcon && dropdownMenu) {
-                profileIcon.addEventListener('click', function() {
-                    dropdownMenu.classList.toggle('show');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(event) {
-                    if (!profileIcon.contains(event.target) && !dropdownMenu.contains(event.target)) {
-                        dropdownMenu.classList.remove('show');
-                    }
-                });
-            }
-        });
-    </script>
+    <!-- Main script -->
+    <script src="/js/officials-project.js" defer></script>
+    <script src="/js/socket-notification.js" defer></script>
 </body>
 </html>
