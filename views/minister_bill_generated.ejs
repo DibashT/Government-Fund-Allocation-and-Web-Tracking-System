@@ -130,12 +130,7 @@
             <p><strong>Department:</strong> <span><%= project.department %></span></p>
             <p><strong>Allocated Fund:</strong> <span>$<%= project.allocatedFund.toLocaleString() %></span></p>
             <p><strong>Generated On:</strong> <span><%= new Date(project.billGeneratedAt).toLocaleDateString() %></span></p>
-            <p>
-                <strong>View Bill:</strong> 
-                <a href="<%= billUrl %>" target="_blank" class="view-bill-link">
-                    <i class="fas fa-file-pdf"></i> Open PDF
-                </a>
-            </p>
+            
         </div>
         
         <div class="button-group">

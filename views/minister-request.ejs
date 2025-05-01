@@ -302,7 +302,7 @@
                                     </td>
                                     <td>
                                         <% if (project.status === "Approved" && !project.billFilePath) { %>
-                                            <button class="generate-btn enabled" id="generate-btn-<%= project._id %>" onclick="generateBill('<%= project._id %>')">
+                                            <button class="generate-btn enabled" id="generate-btn-<%= project._id %>" onclick="handleGenerateBill(event, '<%= project._id %>')">
                                                 <i class="fas fa-file-invoice"></i> Generate Bill
                                             </button>
                                         <% } else if (project.billFilePath) { %>

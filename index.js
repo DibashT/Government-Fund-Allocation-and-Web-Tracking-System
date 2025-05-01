@@ -36,6 +36,23 @@ const transporter = nodemailer.createTransport({
 });
 
 
+// Set up socket.io with user tracking
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+  
+  // Store user ID when they connect
+  socket.on('register-user', (userId) => {
+    if (userId) {
+      console.log(`User ${userId} registered with socket ${socket.id}`);
+      socket.join(`user-${userId}`); // Join a room specific to this user
+    }
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 // Import fund alert handler and set up socket.io
 const fundAlertHandler = require('./utils/fundAlertHandler');
 fundAlertHandler.setIO(io);
@@ -2143,13 +2160,32 @@ const generateBillForProject = async (project) => {
   }
 };
 
+// Track ongoing bill generations to prevent duplicates
+const ongoingBillGenerations = new Set();
+
 // Keep only this real implementation
 app.post("/generate-bill/:id", authMiddleware, async (req, res) => {
-  console.log(`Bill generation requested for project ID: ${req.params.id}`);
+  const projectId = req.params.id;
+  console.log(`Bill generation requested for project ID: ${projectId}`);
+  
+  // Check if bill generation is already in progress for this project
+  if (ongoingBillGenerations.has(projectId)) {
+    console.log(`Bill generation already in progress for project ID: ${projectId}`);
+    return res.status(429).json({
+      success: false,
+      message: "Bill generation already in progress for this project"
+    });
+  }
+  
+  // Add project to ongoing generations set
+  ongoingBillGenerations.add(projectId);
+  
   try {
     // Verify user role
     if (req.user.role !== "Minister") {
       console.log(`Unauthorized bill generation attempt by user role: ${req.user.role}`);
+      // Remove from ongoing generations on error
+      ongoingBillGenerations.delete(projectId);
       return res.status(403).json({ 
         success: false, 
         message: "Only ministers can generate bills." 
@@ -2164,6 +2200,8 @@ app.post("/generate-bill/:id", authMiddleware, async (req, res) => {
 
     if (!project) {
       console.log(`Project not found with ID: ${req.params.id}`);
+      // Remove from ongoing generations on error
+      ongoingBillGenerations.delete(projectId);
       return res.status(404).json({ 
         success: false, 
         message: "Project not found." 
@@ -2172,6 +2210,8 @@ app.post("/generate-bill/:id", authMiddleware, async (req, res) => {
 
     console.log(`Project status: ${project.status}`);
     if (project.status !== "Approved") {
+      // Remove from ongoing generations on error
+      ongoingBillGenerations.delete(projectId);
       return res.status(400).json({ 
         success: false, 
         message: "Only approved projects can have bills generated." 
@@ -2180,6 +2220,8 @@ app.post("/generate-bill/:id", authMiddleware, async (req, res) => {
 
     console.log(`Project bill status: ${project.billFilePath ? 'Bill exists' : 'No bill'}`);
     if (project.billFilePath) {
+      // Remove from ongoing generations on error
+      ongoingBillGenerations.delete(projectId);
       return res.status(400).json({ 
         success: false, 
         message: "Bill already generated." 
@@ -2245,34 +2287,50 @@ app.post("/generate-bill/:id", authMiddleware, async (req, res) => {
       });
     }
 
-    // Create notification for officials about bill generation
+    // Create notification only for the specific official who requested the project
     try {
-      console.log(`Creating notification for officials...`);
-      await Notification.create({
-        projectId: project._id,
-        message: `Bill for project "${project.projectName}" has been generated and is ready for review.`,
-        status: "BillGenerated",
-        recipientRole: "Government Official",
-      });
-      console.log(`Notification created for project ${project._id}`);
+      if (project.requestedBy && project.requestedBy._id) {
+        console.log(`Creating notification for requesting official ID: ${project.requestedBy._id}...`);
+        await Notification.create({
+          projectId: project._id,
+          message: `Bill for project "${project.projectName}" has been generated and is ready for review.`,
+          status: "BillGenerated",
+          recipientId: project.requestedBy._id, // Send only to the specific official
+          recipientRole: "Government Official",
+        });
+        console.log(`Notification created for project ${project._id} for official ${project.requestedBy._id}`);
+      } else {
+        console.log(`No requesting official found for project ${project._id}, skipping notification`);
+      }
     } catch (notificationError) {
       console.warn(`Warning: Failed to create notification: ${notificationError.message}`);
       // Continue even if notification creation fails
     }
 
-    // Emit notification via socket.io
+    // Emit notification via socket.io only to the specific official using rooms
     try {
-      console.log(`Emitting socket notification...`);
-      const io = req.app.get("io");
-      io.emit("new-notification", { 
-        message: `Bill for project "${project.projectName}" has been generated.`, 
-        status: "BillGenerated" 
-      });
-      console.log(`Socket notification emitted for project ${project._id}`);
+      if (project.requestedBy && project.requestedBy._id) {
+        console.log(`Emitting socket notification to specific official...`);
+        const io = req.app.get("io");
+        const officialId = project.requestedBy._id.toString();
+        
+        // Send to the specific user's room
+        io.to(`user-${officialId}`).emit("targeted-notification", { 
+          message: `Bill for project "${project.projectName}" has been generated.`, 
+          status: "BillGenerated"
+        });
+        
+        console.log(`Socket notification emitted for project ${project._id} to official ${officialId} room`);
+      } else {
+        console.log(`No requesting official found for project ${project._id}, skipping socket notification`);
+      }
     } catch (socketError) {
       console.warn(`Warning: Socket emit failed: ${socketError.message}`);
       // Continue even if socket emit fails
     }
+    
+    // Remove project from ongoing generations set
+    ongoingBillGenerations.delete(projectId);
 
     // Send bill to the specific official who requested the project
     try {
@@ -2369,6 +2427,13 @@ app.get("/officials-bill/:id", authMiddleware, async (req, res) => {
       return res.status(404).send("Project not found");
     }
     
+    // Check if the current user is the one who requested this project
+    if (project.requestedBy && project.requestedBy._id && 
+        project.requestedBy._id.toString() !== req.user._id.toString()) {
+      console.error(`Access denied: User ${req.user._id} attempted to view bill for project requested by ${project.requestedBy._id}`);
+      return res.status(403).send("Access denied. You can only view bills for projects you requested.");
+    }
+    
     if (!project.billFilePath) {
       console.error(`Bill not found for project: ${projectId}`);
       return res.status(404).send("Bill has not been generated for this project");
@@ -2402,6 +2467,43 @@ app.get("/officials-bill/:id", authMiddleware, async (req, res) => {
   } catch (error) {
     console.error(`Error retrieving bill: ${error.message}`);
     res.status(500).send("Error retrieving bill");
+  }
+});
+
+// Route to serve the bill list page to officials - only shows bills for projects they requested
+app.get("/officials-bill", authMiddleware, async (req, res) => {
+  try {
+    // Only allow Government Officials to access this page
+    if (req.user.role !== "Government Official") {
+      return res.status(403).send("Access denied. Only Government Officials can view bills.");
+    }
+    
+    console.log(`Fetching bills for user ID: ${req.user._id}`);
+    
+    // Only fetch projects that were requested by the current user and have bills generated
+    const projects = await Project.find({ 
+      requestedBy: req.user._id,
+      billGenerated: true,
+      billFilePath: { $exists: true, $ne: null }
+    })
+    .populate("billGeneratedBy", "name")
+    .populate("actionBy", "name")
+    .lean();
+    
+    console.log(`Found ${projects.length} bills for user ${req.user._id}`);
+    
+    // Format dates for display
+    const formattedProjects = projects.map(project => ({
+      ...project,
+      billGeneratedAt: project.billGeneratedAt ? new Date(project.billGeneratedAt).toLocaleDateString() : "N/A",
+      billGeneratedBy: project.billGeneratedBy ? project.billGeneratedBy.name : "N/A"
+    }));
+    
+    // Render the bill list page with only the current user's bills
+    res.render("officials_bill_list", { projects: formattedProjects });
+  } catch (error) {
+    console.error(`Error retrieving bills: ${error.message}`);
+    res.status(500).send("Error retrieving bills");
   }
 });
 

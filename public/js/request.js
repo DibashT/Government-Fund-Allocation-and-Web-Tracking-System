@@ -1,3 +1,6 @@
+// Track if a bill generation is in progress
+let billGenerationInProgress = false;
+
 document.addEventListener("DOMContentLoaded", () => {
   addClickListeners(".view-btn", handleViewButtonClick);
   addClickListeners(".approve, .reject", handleApprovalButtons);
@@ -111,14 +114,8 @@ function generateBill(projectId) {
   .then((response) => {
     if (response.ok) {
       return response.json().then(data => {
-        // Show success message
-        showToast('Bill generated successfully!', 'success');
-        
-        // Redirect to confirmation page for ministers
-        setTimeout(() => {
-          // The bill was generated, should redirect to confirmation page
-          window.location.href = `/bill-generated/${projectId}`;
-        }, 1500);
+        // Redirect to confirmation page for ministers without showing notification
+        window.location.href = `/bill-generated/${projectId}`;
       });
     } else {
       return response.json().then(data => {
@@ -132,6 +129,40 @@ function generateBill(projectId) {
     console.error('Error generating bill:', error);
     showToast('An error occurred.', 'error');
   });
+}
+
+// Handle Generate Bill button click with debounce mechanism
+function handleGenerateBill(event, projectId) {
+  event.preventDefault();
+  
+  // Prevent double clicks
+  if (billGenerationInProgress) {
+    console.log('Bill generation already in progress');
+    return;
+  }
+  
+  // Get the button and update its appearance
+  const button = document.getElementById(`generate-btn-${projectId}`);
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+  }
+  
+  // Set flag to prevent double generation
+  billGenerationInProgress = true;
+  
+  // Call the original generate bill function
+  generateBill(projectId);
+  
+  // Reset the flag after a delay (in case the request fails)
+  setTimeout(() => {
+    billGenerationInProgress = false;
+    // Only reset the button if the page hasn't navigated away
+    if (button && document.body.contains(button)) {
+      button.disabled = false;
+      button.innerHTML = '<i class="fas fa-file-invoice"></i> Generate Bill';
+    }
+  }, 5000); // 5 second timeout as a fallback
 }
 
 // Show approval/rejection confirmation modal

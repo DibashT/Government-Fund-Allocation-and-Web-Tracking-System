@@ -6,7 +6,26 @@ document.addEventListener('DOMContentLoaded', function() {
   // Ensure the socket is connected
   socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
+      
+      // Get user ID from cookie or other source
+      const userId = getUserIdFromCookie();
+      if (userId) {
+          console.log("Registering user ID with socket:", userId);
+          socket.emit('register-user', userId);
+      }
   });
+  
+  // Function to get user ID from cookie
+  function getUserIdFromCookie() {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.startsWith('userId=')) {
+              return cookie.substring('userId='.length, cookie.length);
+          }
+      }
+      return null;
+  }
 
   // Listen for new admin notifications (fund alerts)
   socket.on('fundAlertNotification', (notification) => {
@@ -210,6 +229,40 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add new notification to the top of the list
     targetList.prepend(newItem);
+  });
+
+  // Handle targeted notifications (only for specific users)
+  socket.on("targeted-notification", (data) => {
+    console.log("Targeted notification received:", data);
+    
+    // Process the notification - the server already filtered it for the current user
+    // Show browser notification
+    if (Notification.permission === "granted") {
+      new Notification("Project Bill Generated", {
+        body: data.message,
+        icon: "/images/logo.png"
+      });
+    }
+
+    // Add to notification list if available
+    const targetList = document.querySelector("#status .notification-list");
+    if (targetList) {
+      // Create notification item
+      const newItem = document.createElement("li");
+      newItem.className = `notification-item ${data.status.toLowerCase()}`;
+      
+      newItem.innerHTML = `
+        <div class="icon"><i class="fas fa-file-invoice"></i></div>
+        <div class="message">
+          <strong><i class="fas fa-envelope"></i> Message:</strong> ${data.message}
+          <br>
+          <small><i class="fas fa-clock"></i> ${new Date().toLocaleString()}</small>
+        </div>
+      `;
+      
+      // Add new notification to the top of the list
+      targetList.prepend(newItem);
+    }
   });
 
   // Request permission for browser notifications
