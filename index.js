@@ -4,7 +4,7 @@ const bcrypt=require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ejsLayouts = require('ejs-layouts');
-const { User, Project, DepartmentFund, Notification, Otp } = require('./config');
+const { User, Project, DepartmentFund, Notification, Otp, Post } = require('./config');
 const { authMiddleware } = require("./authMiddleware");
 const upload = require("./config/uploadConfig");
 const PDFDocument = require('pdfkit');
@@ -869,9 +869,168 @@ app.get("/officials-dashboard", authMiddleware, async (req, res) => {
   }
 });
 
-app.get("/public-dashboard", (req, res) => {
-  res.render("public-dashboard", { user: req.user });
+app.get("/public-dashboard", authMiddleware, async (req, res) => {
+  try {
+    // Fetching all the necessary data concurrently
+    const [
+      totalProjects,
+      activeProjects,
+      totalUsers,
+      departmentFunds,
+      highestFundedProjectData,
+      lowestFundedProjectData,
+      monthlyFundAllocation,
+      topDepartments,
+      latestPendingRequests,
+      latestOngoingProjects,
+      latestCompletedProjects,
+      roleCounts // Added role counts aggregation
+    ] = await Promise.all([
+      Project.countDocuments(),
+      Project.countDocuments({ status: "Approved" }),
+      User.countDocuments(),
+      DepartmentFund.find().lean(),
+      Project.findOne().sort({ allocatedFund: -1 }).lean(),
+      Project.findOne().sort({ allocatedFund: 1 }).lean(),
+      DepartmentFund.aggregate([
+        {
+          $group: {
+            _id: { $month: "$allocationDate" },
+            totalAllocated: { $sum: "$approvedFund" }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      DepartmentFund.find().sort({ approvedFund: -1 }).limit(3).lean(),
+      Project.find({ status: "Pending" }).sort({ createdAt: -1 }).limit(3).select("projectName createdAt").lean(),
+      Project.find({ progressStatus: "Ongoing" }).sort({ updatedAt: -1 }).limit(3).select("projectName progress").lean(),
+      Project.find({
+        progressStatus: "Completed",
+        actualCompletionDate: { $ne: null }
+      }).sort({ actualCompletionDate: -1, updatedAt: -1 }).limit(3).lean(),
+      User.aggregate([ // New role count aggregation
+        { $match: { isActive: true } },
+        {
+          $group: {
+            _id: "$role",
+            count: { $sum: 1 }
+          }
+        }
+      ])
+    ]);
+
+    // Aggregating role counts into an object
+    const roleCountMap = roleCounts.reduce((acc, { _id, count }) => {
+      acc[_id] = count;
+      return acc;
+    }, {});
+
+    // Destructure role counts or set to 0 if undefined
+    const ministers = roleCountMap["Minister"] || 0;
+    const governmentOfficials = roleCountMap["Government Official"] || 0;
+    const publicUsers = roleCountMap["Public"] || 0;
+
+    // Fund summaries
+    const totalFund = departmentFunds.reduce((acc, fund) => acc + (fund.totalFund || 0), 0);
+    const allocatedFund = departmentFunds.reduce((acc, fund) => acc + (fund.usedFund || 0), 0);
+    const remainingFund = departmentFunds.reduce((acc, fund) => acc + (fund.remainingFund || 0), 0);
+
+    // Highest/Lowest Funded Projects
+    const highestFundedProjectName = highestFundedProjectData?.projectName || "No Data";
+    const highestFundedProjectAmount = highestFundedProjectData?.allocatedFund || 0;
+    const lowestFundedProjectName = lowestFundedProjectData?.projectName || "No Data";
+    const lowestFundedProjectAmount = lowestFundedProjectData?.allocatedFund || 0;
+
+    // Monthly Fund Allocation
+    const months = monthlyFundAllocation.map(data => `Month ${data._id}`);
+    const fundAllocations = monthlyFundAllocation.map(data => data.totalAllocated);
+
+    // Create trendData
+    const trendData = {
+      monthly: {
+        labels: months,
+        data: fundAllocations
+      }
+    };
+
+    // Top Department Stats
+    const topDepartmentNames = topDepartments.map(dept => dept.department);
+    const topDepartmentFunds = topDepartments.map(dept => dept.approvedFund);
+
+    // Format project updates
+    const formattedPendingRequests = latestPendingRequests.map(project => ({
+      name: project.projectName || "No Name",
+      date: project.createdAt?.toISOString().split('T')[0] || "No Date"
+    }));
+
+    const formattedOngoingProjects = latestOngoingProjects.map(project => ({
+      name: project.projectName || "No Name",
+      progress: project.progress || 0
+    }));
+
+    const formattedCompletedProjects = latestCompletedProjects.map(project => ({
+      name: project.projectName || "No Name",
+      completedDate: project.actualCompletionDate?.toISOString().split('T')[0] || "No Date"
+    }));
+
+    // Send data to EJS view
+    res.render("public-dashboard", {
+      totalUsers,
+      ministers,
+      governmentOfficials,
+      publicUsers,
+      totalProjects,
+      activeProjects,
+      totalFund,
+      allocatedFund,
+      remainingFund,
+      highestFundedProjectName,
+      highestFundedProjectAmount,
+      lowestFundedProjectName,
+      lowestFundedProjectAmount,
+      latestPendingRequests: formattedPendingRequests,
+      latestOngoingProjects: formattedOngoingProjects,
+      latestCompletedProjects: formattedCompletedProjects,
+      departmentFunds,
+      months,
+      fundAllocations,
+      trendData,  // Pass trendData to EJS
+      topDepartments,
+      topDepartmentNames,
+      topDepartmentFunds,
+      user: req.user  // Pass the user object from the JWT token
+    });
+
+  } catch (error) {
+    console.error("Error fetching minister dashboard data:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
+
+// Public Post Page Route
+app.get('/public-post', authMiddleware, async (req, res) => {
+  try {
+    // Fetch posts sorted by most recent
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // Ensure each post has likes and dislikes arrays
+    const processedPosts = posts.map(post => ({
+      ...post,
+      likes: post.likes || [],
+      dislikes: post.dislikes || []
+    }));
+    
+    // Make sure posts exists, even if it's empty
+    res.render('public-post', { 
+      user: req.user, 
+      posts: processedPosts || [] 
+    });
+  } catch (error) {
+  }
+});
+
 app.get("/officials-project", authMiddleware, (req, res) => {
   // Get toast messages from cookies
   const successMsg = req.cookies.successMessage;
@@ -1319,30 +1478,6 @@ app.post('/verify-otp', async (req, res) => {
             // Create user with transaction-like approach
             const user = await User.create(otpRecord.userData);
 
-            // Generate JWT token with more claims for better security
-            const token = jwt.sign(
-                { 
-                    _id: user._id.toString(), 
-                    role: user.role, 
-                    name: user.name,
-                    email: user.email,
-                    iat: Math.floor(Date.now() / 1000)
-                },
-                SECRET_KEY,
-                { expiresIn: "7h" }
-            );
-
-            // Set secure cookie
-            res.cookie("token", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "Strict",
-                maxAge: 7 * 60 * 60 * 1000, // 7 hours
-            });
-
-            // Remove OTP record immediately after successful verification
-            await Otp.deleteOne({ _id: otpRecord._id });
-
             // Create welcome notification for the user
             if (user.role === "Government Official" || user.role === "Admin") {
                 await Notification.create({
@@ -1353,19 +1488,11 @@ app.post('/verify-otp', async (req, res) => {
                 });
             }
 
-            // Redirect to appropriate dashboard based on role
-            switch (user.role) {
-                case "Admin":
-                    return res.redirect("/admin-dashboard");
-                case "Minister":
-                    return res.redirect("/minister-dashboard");
-                case "Government Official":
-                    return res.redirect("/officials-dashboard");
-                case "Public":
-                    return res.redirect("/public-dashboard");
-                default:
-                    return res.redirect("/login");
-            }
+            // Remove OTP record immediately after successful verification
+            await Otp.deleteOne({ _id: otpRecord._id });
+
+            // Redirect to login page with success message after registration
+            return res.redirect('/login?message=' + encodeURIComponent('Registration successful! Please log in with your credentials.'));
         } catch (userCreationError) {
             console.error("User creation error:", userCreationError);
             // If user creation fails, clean up OTP record
@@ -1489,7 +1616,7 @@ app.post('/officials-profile/update', authMiddleware, async (req, res) => {
   }
 });
 
-app.get('/officials-project', (req, res) => {
+app.get("/officials-project", (req, res) => {
   res.render('officials-project', { query: req.query });
 });
 
@@ -2349,18 +2476,7 @@ app.post("/generate-bill/:id", authMiddleware, async (req, res) => {
         const emailText = `
           Dear ${officialName},
 
-          A bill has been generated for your project "${project.projectName}" in the ${project.department} department.
-
-          Project Details:
-          - Project Name: ${project.projectName}
-          - Department: ${project.department}
-          - Allocated Fund: $${project.allocatedFund.toLocaleString()}
-          - Approved By: ${project.actionBy && project.actionBy.name ? project.actionBy.name : 'N/A'}
-          - Bill Generated On: ${new Date().toLocaleDateString()}
-
-          Please log in to the system to view and download the bill.
-
-          This is an automated message. Please do not reply to this email.
+          A bill has been generated for your project "${project.projectName}" in the ${project.department} department. This is an automated message. Please do not reply to this email.
 
           Regards,
           Government Fund Allocation System
@@ -2440,7 +2556,7 @@ app.get("/officials-bill/:id", authMiddleware, async (req, res) => {
     }
 
     // Log bill path information
-    console.log(`Bill path in database: ${project.billFilePath}`);
+    console.log(`Bill path in database: ${project.billFilePath || 'Not generated'}`);
     
     // Remove leading slash if present
     const relativeBillPath = project.billFilePath.replace(/^\/+/, '');
@@ -2573,7 +2689,7 @@ app.get("/download-bill/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// Add a route for viewing the bill directly in the browser
+// Route to view the bill directly in the browser
 app.get("/view-bill/:id", authMiddleware, async (req, res) => {
   try {
     // Only allow Government Officials to view bills
@@ -2918,7 +3034,8 @@ app.get("/active-project-locations", authMiddleware, async (req, res) => {
       progressStatus: { $in: ["Ongoing", "Completed"] },
       "location.coordinates.0": { $ne: 0 },
       "location.coordinates.1": { $ne: 0 }
-    }).select('_id projectName department allocatedFund startDate projectDeadline location progress progressStatus actualCompletionDate').lean();
+    }).select('_id projectName department allocatedFund startDate projectDeadline location progress progressStatus actualCompletionDate projectDetails requestedBy')
+    .lean();
     
     // Format date and prepare response
     const projectsWithFormattedDates = projects.map(project => ({
@@ -2996,8 +3113,150 @@ app.post('/test-deadline-notification', authMiddleware, async (req, res) => {
   }
 });
 
+// Public Post Page Route
+app.get('/public-post', authMiddleware, async (req, res) => {
+  try {
+    // Fetch posts sorted by most recent
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // Make sure posts exists, even if it's empty
+    res.render('public-post', { 
+      user: req.user, 
+      posts: posts || [] 
+    });
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    // Even on error, pass empty array to avoid template errors
+    res.render('public-post', { 
+      user: req.user, 
+      posts: [],
+      error: 'Failed to load posts'
+    });
+  }
+});
+
+// Create a new post with image upload
+app.post('/api/posts', authMiddleware, upload.single('image'), async (req, res) => {
+  try {
+    const { title, content } = req.body;
+    
+    // Create post object
+    const postData = {
+      title,
+      content,
+      author: req.user._id,
+      authorName: req.user.name
+    };
+
+    // If image was uploaded, add it to the post
+    if (req.file) {
+      postData.imageUrl = `/file-view/${req.file.filename}`;
+    }
+
+    // Create new post
+    const post = await Post.create(postData);
+    
+    res.status(201).json({
+      success: true,
+      post
+    });
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create post'
+    });
+  }
+});
+
+// Like a post
+app.post('/api/posts/:postId/like', authMiddleware, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    // Find the post
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    // Check if user already liked or disliked this post
+    const alreadyLiked = post.likes.includes(userId);
+    const alreadyDisliked = post.dislikes.includes(userId);
+
+    // If already liked, remove like (toggle behavior)
+    if (alreadyLiked) {
+      post.likes = post.likes.filter(id => !id.equals(userId));
+    } else {
+      // Add like
+      post.likes.push(userId);
+      
+      // Remove dislike if exists
+      if (alreadyDisliked) {
+        post.dislikes = post.dislikes.filter(id => !id.equals(userId));
+      }
+    }
+
+    await post.save();
+
+    res.json({
+      success: true,
+      likes: post.likes.length,
+      dislikes: post.dislikes.length,
+      userLiked: post.likes.some(id => id.equals(userId)),
+      userDisliked: post.dislikes.some(id => id.equals(userId))
+    });
+  } catch (error) {
+    console.error('Error liking post:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Dislike a post
+app.post('/api/posts/:postId/dislike', authMiddleware, async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    // Find the post
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    // Check if user already liked or disliked this post
+    const alreadyLiked = post.likes.includes(userId);
+    const alreadyDisliked = post.dislikes.includes(userId);
+
+    // If already disliked, remove dislike (toggle behavior)
+    if (alreadyDisliked) {
+      post.dislikes = post.dislikes.filter(id => !id.equals(userId));
+    } else {
+      // Add dislike
+      post.dislikes.push(userId);
+      
+      // Remove like if exists
+      if (alreadyLiked) {
+        post.likes = post.likes.filter(id => !id.equals(userId));
+      }
+    }
+
+    await post.save();
+
+    res.json({
+      success: true,
+      likes: post.likes.length,
+      dislikes: post.dislikes.length,
+      userLiked: post.likes.some(id => id.equals(userId)),
+      userDisliked: post.dislikes.some(id => id.equals(userId))
+    });
+  } catch (error) {
+    console.error('Error disliking post:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 server.listen(port,()=>console.log(`Server running on http://localhost:${port}`));
-
-
-
-

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<%
+// Ensure posts is always defined
+if (typeof posts === 'undefined') {
+  posts = [];
+}
+%>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Public Post Page">
+  <title>Public Post Page</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS Libraries -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js" defer></script>
+  <link rel="stylesheet" href="/public.css">
+  <link rel="stylesheet" href="/public-post.css">
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Mobile Toggle -->
+    <div class="mobile-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </div>
+    
+    <div class="sidebar" id="sidebar">
+      <h2><img src="/images/logo.png" class="logo" alt="Logo"></h2>
+      <ul>
+        <li><a href="/public-dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+        <li><a href="/public-post" class="active"><i class="fas fa-tasks"></i> Post</a></li>
+        <li><a href="/public-notification"><i class="fas fa-chart-line"></i> Notification</a></li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <div class="top-header">
+        <h1>Community Posts</h1>
+        <div class="profile-menu">
+          <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+          <div class="dropdown-menu">
+            <a href="/public-profile"><i class="fas fa-user"></i> <%= user ? user.name : 'Profile' %></a>
+            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Post Section -->
+      <div class="create-post-container">
+        <div class="section-header"><i class="fas fa-pen"></i> Create a New Post</div>
+        <form id="post-form" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="post-title">Title</label>
+            <input type="text" id="post-title" name="title" required placeholder="Enter a title for your post">
+          </div>
+          <div class="form-group">
+            <label for="post-content">Content</label>
+            <textarea id="post-content" name="content" required placeholder="Share your thoughts..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="post-image">Add Image (optional)</label>
+            <input type="file" id="post-image" name="image" accept="image/*">
+            <div id="image-preview" class="mt-2"></div>
+          </div>
+          <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Post</button>
+        </form>
+      </div>
+
+      <!-- Posts Section -->
+      <div class="posts-container">
+        <div class="section-header"><i class="fas fa-list"></i> Recent Posts</div>
+        
+        <div class="posts-list" id="posts-list">
+          <% if (typeof posts !== 'undefined' && posts && posts.length > 0) { %>
+            <% posts.forEach(post => { %>
+              <div class="post-card" data-post-id="<%= post._id %>">
+                <div class="post-header">
+                  <div class="post-author">
+                    <i class="fas fa-user-circle"></i>
+                    <span><%= post.authorName %></span>
+                  </div>
+                  <div class="post-date">
+                    <i class="far fa-clock"></i>
+                    <%= new Date(post.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) %>
+                  </div>
+                </div>
+                <div class="post-body">
+                  <h3 class="post-title"><%= post.title %></h3>
+                  <p class="post-content"><%= post.content %></p>
+                  <% if (post.imageUrl) { %>
+                    <div class="post-image">
+                      <img src="<%= post.imageUrl %>" alt="Post image">
+                    </div>
+                  <% } %>
+                </div>
+                <div class="post-footer">
+                  <div class="post-actions">
+                    <button class="like-btn <%= post.likes.includes(user._id) ? 'active' : '' %>" data-action="like" data-post-id="<%= post._id %>">
+                      <i class="fas fa-thumbs-up"></i>
+                      <span class="like-count"><%= post.likes.length %></span>
+                    </button>
+                    <button class="dislike-btn <%= post.dislikes.includes(user._id) ? 'active' : '' %>" data-action="dislike" data-post-id="<%= post._id %>">
+                      <i class="fas fa-thumbs-down"></i>
+                      <span class="dislike-count"><%= post.dislikes.length %></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div class="no-posts-message">
+              <i class="fas fa-inbox"></i>
+              <p>No posts yet. Be the first to share something!</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle sidebar on mobile
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('active');
+    });
+
+    // Toggle profile dropdown
+    document.querySelector('.profile-icon').addEventListener('click', function() {
+      document.querySelector('.dropdown-menu').classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    window.addEventListener('click', function(e) {
+      if (!e.target.matches('.profile-icon')) {
+        const dropdown = document.querySelector('.dropdown-menu');
+        if (dropdown.classList.contains('show')) {
+          dropdown.classList.remove('show');
+        }
+      }
+    });
+
+    // Logout function
+    function logout() {
+      fetch('/logout', { method: 'POST' })
+        .then(response => {
+          if (response.ok) {
+            window.location.href = '/login';
+          }
+        })
+        .catch(error => console.error('Logout error:', error));
+    }
+
+    // Image preview
+    document.getElementById('post-image').addEventListener('change', function(e) {
+      const preview = document.getElementById('image-preview');
+      preview.innerHTML = '';
+      
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          preview.appendChild(img);
+        }
+        
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+
+    // Handle post submission
+    document.getElementById('post-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      
+      fetch('/api/posts', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Failed to create post');
+      })
+      .then(data => {
+        // Reset form and refresh posts
+        this.reset();
+        document.getElementById('image-preview').innerHTML = '';
+        window.location.reload();
+      })
+      .catch(error => {
+        console.error('Error creating post:', error);
+        alert('Failed to create post. Please try again.');
+      });
+    });
+
+    // Handle like/dislike actions
+    document.querySelectorAll('.like-btn, .dislike-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const postId = this.getAttribute('data-post-id');
+        const action = this.getAttribute('data-action');
+        
+        fetch(`/api/posts/${postId}/${action}`, {
+          method: 'POST'
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          }
+          throw new Error(`Failed to ${action} post`);
+        })
+        .then(data => {
+          // Update like/dislike counts
+          const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+          const likeBtn = postCard.querySelector('.like-btn');
+          const dislikeBtn = postCard.querySelector('.dislike-btn');
+          
+          likeBtn.querySelector('.like-count').textContent = data.likes;
+          dislikeBtn.querySelector('.dislike-count').textContent = data.dislikes;
+          
+          // Toggle active class
+          likeBtn.classList.toggle('active', data.userLiked);
+          dislikeBtn.classList.toggle('active', data.userDisliked);
+        })
+        .catch(error => {
+          console.error(`Error ${action} post:`, error);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

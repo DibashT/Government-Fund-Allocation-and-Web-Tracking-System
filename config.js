@@ -219,13 +219,53 @@ const OtpSchema = new mongoose.Schema({
 });
 const Otp = mongoose.model("Otp", OtpSchema);
 
+const postSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  content: {
+    type: String,
+    required: true
+  },
+  imageUrl: {
+    type: String,
+    required: false
+  },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  authorName: {
+    type: String,
+    required: true
+  },
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  dislikes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const Post = mongoose.model("Post", OtpSchema);
+
 
 module.exports = { 
   User, 
   Project,
   DepartmentFund,
   Notification,
-  Otp
+  Otp,
+  Post
 };
 
 
