@@ -1044,7 +1044,8 @@ app.get("/officials-project", authMiddleware, (req, res) => {
     query: {
       success: successMsg,
       error: errorMsg
-    } 
+    },
+    user: req.user
   });
 });
 app.get("/add-users", (req, res) => {
@@ -1572,7 +1573,7 @@ app.get('/officials-notification',authMiddleware, async (req, res) => {
     const notifications = await Notification.find({ recipientRole: "Government Official" })
       .sort({ createdAt: -1 });
 
-    res.render('officials-notification', { notifications });
+    res.render('officials-notification', { notifications, user: req.user });
   } catch (error) {
     console.error("Error fetching notifications:", error);
     res.status(500).send("Internal Server Error");
@@ -1589,7 +1590,11 @@ app.get('/officials-profile', authMiddleware, async (req, res) => {
       return res.status(404).send("User not found");
     }
     
-    res.render('officials-profile', { user });
+    res.render('officials-profile', { 
+      user,
+      success: req.query.success,
+      error: req.query.error
+    });
   } catch (error) {
     console.error("Error fetching profile data:", error);
     res.status(500).send("Internal Server Error");
@@ -1602,17 +1607,23 @@ app.post('/officials-profile/update', authMiddleware, async (req, res) => {
     const { name, email, phone, department } = req.body;
     
     // Update user data
-    await User.findByIdAndUpdate(req.user._id, {
-      name,
-      email,
-      phone,
-      department
-    });
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, email, phone, department },
+      { new: true } // This ensures we get the updated document
+    );
+
+    // Update the user data in the session
+    req.user.name = updatedUser.name;
+    req.user.email = updatedUser.email;
+    req.user.phone = updatedUser.phone;
+    req.user.department = updatedUser.department;
     
-    res.redirect('/officials-profile');
+    // Redirect with success message
+    res.redirect('/officials-profile?success=Profile updated successfully');
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).send("Error updating profile");
+    res.redirect('/officials-profile?error=Error updating profile');
   }
 });
 
@@ -1900,7 +1911,8 @@ app.get("/officials-project-progress", authMiddleware, async (req, res) => {
     res.render("officials_project_progress", {
       projects,
       success: req.query.success || "",
-      error: req.query.error || ""
+      error: req.query.error || "",
+      user: req.user
     });
 
   } catch (error) {
@@ -1970,10 +1982,13 @@ app.post('/update-progress/:projectId', authMiddleware, (req, res) => {
       const missingAttachments = [];
       for (let i = 0; i < 10; i++) {
         const index = i.toString();
-        // If answer is 'Yes' but no file was uploaded
+        // If answer is 'Yes' but no file was uploaded AND no existing file exists
         if (answers[index] === true) {
           const fieldName = `bill-file-${i}`;
-          if (!req.files[fieldName] || !req.files[fieldName][0]) {
+          const hasNewFile = req.files[fieldName] && req.files[fieldName][0];
+          const hasExistingFile = project.billFiles[index];
+          
+          if (!hasNewFile && !hasExistingFile) {
             missingAttachments.push(i + 1); // Store question number (1-indexed for user display)
           }
         }
@@ -1992,9 +2007,12 @@ app.post('/update-progress/:projectId', authMiddleware, (req, res) => {
         const index = i.toString();
         if (answers[index] === true) {
           const fieldName = `bill-file-${i}`;
-          const file = req.files[fieldName][0];
-          project.billFiles[index] = file.filename;
-          console.log(`Saved bill file for question ${i}: ${file.filename}`);
+          // Only update file if a new one was uploaded
+          if (req.files[fieldName] && req.files[fieldName][0]) {
+            const file = req.files[fieldName][0];
+            project.billFiles[index] = file.filename;
+            console.log(`Saved bill file for question ${i}: ${file.filename}`);
+          }
         }
       }
 
@@ -2579,7 +2597,7 @@ app.get("/officials-bill/:id", authMiddleware, async (req, res) => {
     };
 
     // Render with hyphenated template name
-    res.render("officials-bill", { project: formattedProject });
+    res.render("officials-bill", { project: formattedProject, user: req.user });
   } catch (error) {
     console.error(`Error retrieving bill: ${error.message}`);
     res.status(500).send("Error retrieving bill");
@@ -2593,9 +2611,9 @@ app.get("/officials-bill", authMiddleware, async (req, res) => {
     if (req.user.role !== "Government Official") {
       return res.status(403).send("Access denied. Only Government Officials can view bills.");
     }
-    
+
     console.log(`Fetching bills for user ID: ${req.user._id}`);
-    
+
     // Only fetch projects that were requested by the current user and have bills generated
     const projects = await Project.find({ 
       requestedBy: req.user._id,
@@ -2605,18 +2623,17 @@ app.get("/officials-bill", authMiddleware, async (req, res) => {
     .populate("billGeneratedBy", "name")
     .populate("actionBy", "name")
     .lean();
-    
+
     console.log(`Found ${projects.length} bills for user ${req.user._id}`);
-    
+
     // Format dates for display
     const formattedProjects = projects.map(project => ({
       ...project,
       billGeneratedAt: project.billGeneratedAt ? new Date(project.billGeneratedAt).toLocaleDateString() : "N/A",
       billGeneratedBy: project.billGeneratedBy ? project.billGeneratedBy.name : "N/A"
     }));
-    
-    // Render the bill list page with only the current user's bills
-    res.render("officials_bill_list", { projects: formattedProjects });
+
+    res.render("officials_bill_list", { projects: formattedProjects, user: req.user });
   } catch (error) {
     console.error(`Error retrieving bills: ${error.message}`);
     res.status(500).send("Error retrieving bills");
@@ -2837,7 +2854,7 @@ app.get('/minister-request', authMiddleware, async (req, res) => {
     .populate("requestedBy", "name")
     .populate("projectName");
      
-    res.render('minister-request', { projects });
+    res.render('minister-request', { projects,user:req.user });
   } catch (error) {
     console.error("Error fetching projects:", error);
     res.status(500).send("Internal Server Error");
@@ -2869,7 +2886,8 @@ app.get("/officials-notification", authMiddleware, async (req, res) => {
       notifications: {
         approval: approvalNotifications || [],
         deadline: deadlineNotifications || []
-      }
+      },
+      user: req.user
     });
   } catch (err) {
     console.error(err);
@@ -3058,29 +3076,66 @@ app.post('/minister-profile/update', authMiddleware, async (req, res) => {
     const { name, email, phone } = req.body;
     
     // Update user data
-    await User.findByIdAndUpdate(req.user._id, {
-      name,
-      email,
-      phone
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, email, phone },
+      { new: true } // This ensures we get the updated document
+    );
+
+    if (!updatedUser) {
+        console.error("User not found during minister profile update:", req.user._id);
+        // Redirect with error message if user not found, should ideally not happen
+        return res.redirect('/minister-profile?error=User not found during update');
+    }
+
+    // Update the user data in the req.user object (optional, but good practice)
+    req.user.name = updatedUser.name;
+    req.user.email = updatedUser.email;
+    req.user.phone = updatedUser.phone;
+    // Note: Role and other sensitive info are not updated via this route
+
+    // Re-generate JWT token with updated user information
+    const token = jwt.sign(
+        {
+            _id: updatedUser._id.toString(),
+            role: updatedUser.role,
+            name: updatedUser.name,
+            email: updatedUser.email
+        },
+        SECRET_KEY,
+        { expiresIn: "7h" } // Set expiration (e.g., 7 hours, matching non-remember me login)
+    );
+
+    // Set the new token as a cookie
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 7 * 60 * 60 * 1000, // 7 hours in milliseconds
     });
-    
-    res.redirect('/minister-profile');
+
+    // Redirect with success message
+    res.redirect('/minister-profile?success=Profile updated successfully');
   } catch (error) {
     console.error("Error updating profile:", error);
-    res.status(500).send("Error updating profile");
+    res.redirect('/minister-profile?error=Error updating profile');
   }
 });
 
 app.get('/minister-profile', authMiddleware, async (req, res) => {
   try {
-
+    // Get user data from the database to ensure we have the most up-to-date information
     const user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).send("User not found");
     }
     
-    res.render('minister-profile', { user });
+    res.render('minister-profile', { 
+      user,
+      success: req.query.success,
+      error: req.query.error
+    });
   } catch (error) {
     console.error("Error fetching profile data:", error);
     res.status(500).send("Internal Server Error");
@@ -3260,3 +3315,4 @@ app.post('/api/posts/:postId/dislike', authMiddleware, async (req, res) => {
 });
 
 server.listen(port,()=>console.log(`Server running on http://localhost:${port}`));
+

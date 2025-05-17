@@ -223,12 +223,12 @@
       <div class="top-header">
         <h1>Officials Dashboard</h1>
         <div class="profile-menu">
-          <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+          <i class="fas fa-user-circle profile-icon" aria-label="User menu" title="<%= user.name %>"></i>
           <div class="dropdown-menu">
-            <a href="/officials-profile"><i class="fas fa-user"></i> <%= user ? user.name : 'Profile' %></a>
-            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+              <a href="/officials-profile"><i class="fas fa-user"></i> <%= user.name %></a>
+              <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
           </div>
-        </div>
+      </div>
       </div>
   
   

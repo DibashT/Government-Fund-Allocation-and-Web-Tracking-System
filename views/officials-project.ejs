@@ -53,10 +53,10 @@
             <header class="top-header">
                 <h1>Project Submission</h1>
                 <div class="profile-menu">
-                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu" title="<%= user.name %>"></i>
                     <div class="dropdown-menu">
-                        <a href="/profile"><i class="fas fa-user"></i> Profile</a>
-                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        <a href="/officials-profile"><i class="fas fa-user"></i> <%= user.name %></a>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
             </header>

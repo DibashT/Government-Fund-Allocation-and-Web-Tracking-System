@@ -118,9 +118,9 @@
             <div class="top-header">
                 <h1>Officials Profile</h1>
                 <div class="profile-menu">
-                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu" title="<%= user.name %>"></i>
                     <div class="dropdown-menu">
-                        <a href="/officials-profile"><i class="fas fa-user"></i> <%= user ? user.name : 'Profile' %></a>
+                        <a href="/officials-profile"><i class="fas fa-user"></i> <%= user.name %></a>
                         <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
@@ -129,6 +129,16 @@
             <div class="profile-container">
                 <div class="profile-form">
                     <h2>View and Edit Profile</h2>
+                    <% if (success) { %>
+                        <div class="alert alert-success" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+                            <%= success %>
+                        </div>
+                    <% } %>
+                    <% if (error) { %>
+                        <div class="alert alert-danger" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+                            <%= error %>
+                        </div>
+                    <% } %>
                     <form action="/officials-profile/update" method="POST">
                         <label for="name">Name</label>
                         <input type="text" id="name" name="name" value="<%= user.name %>" required>

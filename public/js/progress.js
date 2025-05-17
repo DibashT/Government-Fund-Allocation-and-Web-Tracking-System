@@ -280,12 +280,19 @@ async function saveProgress() {
     if (isYes) completedQuestions++;
   });
   
-  // Validate that all 'Yes' answers have file attachments
+  // Get the cached project data to check for existing files
+  const cachedProject = projectCache.get(projectId);
+  const existingBills = cachedProject ? cachedProject.billFiles : {};
+  
+  // Validate that all 'Yes' answers have either a new file or an existing file
   const missingAttachments = [];
   Object.keys(answers).forEach(index => {
     if (answers[index] === true) {
       const fileInput = document.getElementById(`bill-file-${index}`);
-      if (!fileInput || fileInput.files.length === 0) {
+      const hasNewFile = fileInput && fileInput.files.length > 0;
+      const hasExistingFile = existingBills && existingBills[index];
+      
+      if (!hasNewFile && !hasExistingFile) {
         missingAttachments.push(parseInt(index) + 1); // Use 1-indexed for user display
       }
     }
