@@ -78,7 +78,7 @@
           <% projects.forEach(project => { %>
             <tr>
               <td><%= project.projectName %></td>
-              <td>$<%= project.allocatedFund.toLocaleString() %></td>
+              <td>Rs.<%= project.allocatedFund.toLocaleString() %></td>
               <td>
                 <% if (project.status === "Approved") { %>
                   <div class="status-approved"><i class="fas fa-check-circle"></i> Approved</div>

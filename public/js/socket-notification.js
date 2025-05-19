@@ -164,14 +164,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Keep existing officials notification functionality
+  // Enhanced officials notification functionality
   socket.on("new-notification", (data) => {
     console.log("New Notification Received:", data);
-
+    
+    // Request notification permission if not already granted
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    
+    // Show desktop notification if permission is granted
     if (Notification.permission === "granted") {
-      new Notification("New Project Update", {
+      const notificationTitle = data.status === 'Approved' ? 
+        "Project Approved" : data.status === 'Rejected' ? 
+        "Project Rejected" : "Project Update";
+        
+      new Notification(notificationTitle, {
         body: data.message,
-        icon: "/images/logo.png"
+        icon: "/images/logo.png",
+        tag: `project-${data.projectId}`, // Prevent duplicate notifications
+        requireInteraction: true // Keep the notification until user interacts with it
       });
     }
 
@@ -229,6 +241,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add new notification to the top of the list
     targetList.prepend(newItem);
+    
+    // If we're on the officials notification page, refresh after a short delay
+    // to ensure the notification is properly stored in the database
+    if (window.location.pathname.includes('officials-notification')) {
+      // Show a toast to indicate new notification has arrived
+      const toast = document.getElementById('toast-container');
+      if (toast) {
+        toast.textContent = "New notification received. Refreshing page...";
+        toast.style.display = 'block';
+      }
+      
+      // Refresh the page after 2 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
   });
 
   // Handle targeted notifications (only for specific users)

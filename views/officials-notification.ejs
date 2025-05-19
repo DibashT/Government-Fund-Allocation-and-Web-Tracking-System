@@ -74,10 +74,9 @@
                 </div>
 
                 <div id="status" class="tab-content active">
-                    <% const statusNotifications = notifications.filter(n => n.status === 'Approved' || n.status === 'Rejected'); %>
-                    <% if (statusNotifications.length > 0) { %>
+                    <% if (notifications.approval && notifications.approval.length > 0) { %>
                         <ul class="notification-list">
-                        <% statusNotifications.forEach(notification => { %>
+                        <% notifications.approval.forEach(notification => { %>
                             <li class="notification-item <%= notification.status.toLowerCase() %>">
                                 <div class="icon">
                                     <% if (notification.status === 'Approved') { %>
@@ -110,10 +109,9 @@
                 </div>
 
                 <div id="deadline" class="tab-content">
-                    <% const deadlineNotifications = notifications.filter(n => n.status === 'DeadlineAlert'); %>
-                    <% if (deadlineNotifications.length > 0) { %>
+                    <% if (notifications.deadline && notifications.deadline.length > 0) { %>
                         <ul class="notification-list">
-                        <% deadlineNotifications.forEach(notification => { %>
+                        <% notifications.deadline.forEach(notification => { %>
                             <li class="notification-item deadline-alert">
                                 <div class="icon">
                                     <i class="fas fa-hourglass-half"></i>
@@ -222,7 +220,7 @@
                         const data = await response.json();
                         
                         if (response.ok) {
-                            testStatus.textContent = "✅ " + data.message;
+                            testStatus.textContent = "" + data.message;
                             testStatus.classList.add('success');
                             
                             // Switch to deadline tab to show the test notification
@@ -233,11 +231,11 @@
                                 window.location.reload();
                             }, 2000);
                         } else {
-                            testStatus.textContent = "❌ " + (data.error || "Failed to send test notification");
+                            testStatus.textContent = " " + (data.error || "Failed to send test notification");
                             testStatus.classList.add('error');
                         }
                     } catch (error) {
-                        testStatus.textContent = "❌ Error: " + error.message;
+                        testStatus.textContent = " Error: " + error.message;
                         testStatus.classList.add('error');
                     } finally {
                         testBtn.disabled = false;

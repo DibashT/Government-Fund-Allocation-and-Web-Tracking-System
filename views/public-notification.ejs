@@ -3,52 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Public Dashboard</title>
+    <meta name="description" content="Public Notifications for Government Projects">
+    <title>Public Notifications</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Libraries -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/officials.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="/public.css">
+    
     <style>
-        .top-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px;
-          background: #2c3e50;
-          color: white;
-        }
-        .profile-menu {
-          position: relative;
-          display: inline-block;
-        }
-        .profile-icon {
-          cursor: pointer;
-          font-size: 20px;
-        }
-        .dropdown-menu {
-          display: none;
-          position: absolute;
-          right: 0;
+        /* Notification styles that match public dashboard theme */
+        .notification-container {
           background: white;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-          border-radius: 5px;
-          overflow: hidden;
-          z-index: 1000;
+          padding: 20px;
+          margin-top: 20px;
+          border-radius: 10px;
+          box-shadow: var(--shadow);
         }
-        .dropdown-menu a {
-          display: block;
-          padding: 10px;
-          text-decoration: none;
-          color: #333;
+        
+        .notification-header {
+          font-size: 18px;
+          font-weight: 600;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid var(--border-color);
+          display: flex;
+          align-items: center;
         }
-        .dropdown-menu a:hover {
-          background: #f1f1f1;
+        
+        .notification-header i {
+          margin-right: 10px;
+          color: var(--warning-color);
         }
-        .profile-menu:hover .dropdown-menu {
-          display: block;
+        
+        .notification-header p {
+          margin-top: 8px;
+          font-size: 14px;
+          font-weight: normal;
+          color: #777;
+        }
+        
+        .notification-list {
+          list-style: none;
+          padding: 0;
+        }
+        
+        .notification-item {
+          background-color: white;
+          border-left: 4px solid var(--warning-color);
+          box-shadow: var(--shadow);
+          margin-bottom: 15px;
+          padding: 15px;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+        }
+        
+        .notification-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .notification-message {
+          font-size: 15px;
+          color: var(--secondary-color);
+          margin-bottom: 10px;
+          line-height: 1.5;
+        }
+        
+        .notification-time {
+          color: #777;
+          font-size: 12px;
+          margin-bottom: 10px;
+        }
+        
+        .notification-details {
+          margin-top: 10px;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 10px;
+          border-top: 1px solid var(--border-color);
+          padding-top: 10px;
+        }
+        
+        .notification-details span {
+          font-size: 13px;
+        }
+        
+        .no-notifications {
+          background-color: var(--light-gray);
+          text-align: center;
+          padding: 30px;
+          border-radius: 8px;
+          color: #777;
+          font-style: italic;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+          .notification-details {
+            grid-template-columns: 1fr;
+          }
         }
       </style>
 </head>
 <body>
     <div class="wrapper">
+        <!-- Mobile Toggle -->
+        <div class="mobile-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+      
         <!-- Sidebar -->
         <div class="sidebar">
             <h2>
@@ -56,24 +125,138 @@
             </h2>
             <ul>
                 <li><a href="/public-dashboard"><i class="fas fa-home"></i> Home</a></li>
-                <li><a href="/public-notification"><i class="fas fa-bell"></i> Notification</a></li>
-                <li><a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="/public-notification" class="active"><i class="fas fa-bell"></i> Notifications</a></li>
             </ul>
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
             <div class="top-header">
-              <h1>Public Dashboard</h1>
-              <div class="profile-menu">
-                <i class="fas fa-user-circle profile-icon"></i>
-                <div class="dropdown-menu">
-                  <a href="/profile">Profile</a>
-                  <a href="/logout">Logout</a>
+                <h1>Public Notifications</h1>
+                <div class="profile-menu">
+                    <i class="fas fa-user-circle profile-icon" aria-label="User menu"></i>
+                    <div class="dropdown-menu">
+                        <a href="/profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
                 </div>
-              </div>
+            </div>
+            
+            <div class="notification-container">
+                <div class="notification-header">
+                    <i class="fas fa-exclamation-triangle"></i> Deadline Missed Notifications
+                </div>
+                
+                <% if (locals.notifications && notifications.length > 0) { %>
+                    <ul class="notification-list">
+                        <% notifications.forEach(notification => { %>
+                            <li class="notification-item">
+                                <div class="notification-message">
+                                    <%= notification.message %>
+                                </div>
+                                <div class="notification-time">
+                                    <i class="far fa-clock"></i> Notified on: <%= new Date(notification.createdAt).toLocaleString() %>
+                                </div>
+                                <% if (notification.projectId) { %>
+                                <div class="notification-details">
+                                    <span><strong>Project:</strong> <%= notification.projectId.projectName %></span>
+                                    <span><strong>Department:</strong> <%= notification.projectId.department %></span>
+                                    <span><strong>Deadline was:</strong> <%= new Date(notification.projectId.projectDeadline).toLocaleDateString() %></span>
+                                </div>
+                                <% } %>
+                            </li>
+                        <% }); %>
+                    </ul>
+                <% } else { %>
+                    <div class="no-notifications">
+                        <p>No missed deadline notifications at this time.</p>
+                    </div>
+                <% } %>
+            </div>
         </div>
     </div>
-      
+
+    <div id="toast-container"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Mobile sidebar toggle
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('show');
+            document.querySelector('.main-content').classList.toggle('sidebar-hidden');
+        });
+
+        // Profile dropdown toggle
+        document.querySelector('.profile-icon').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.querySelector('.dropdown-menu').classList.toggle('show');
+        });
+
+        // Close dropdown when clicking elsewhere
+        document.addEventListener('click', function() {
+            document.querySelector('.dropdown-menu').classList.remove('show');
+        });
+        
+        // Connect to Socket.IO server
+        const socket = io();
+        
+        // Listen for new public notifications
+        socket.on('new-public-notification', (data) => {
+            // Create notification element
+            const notificationList = document.querySelector('.notification-list');
+            const noNotificationsMessage = document.querySelector('.no-notifications');
+            
+            if (noNotificationsMessage) {
+                noNotificationsMessage.style.display = 'none';
+            }
+            
+            if (notificationList) {
+                const newNotificationItem = document.createElement('li');
+                newNotificationItem.className = 'notification-item';
+                newNotificationItem.style.backgroundColor = '#ffffdd'; // Highlight new notifications
+                
+                newNotificationItem.innerHTML = `
+                    <div class="notification-message">
+                        ${data.message}
+                    </div>
+                    <div class="notification-time">
+                        <i class="far fa-clock"></i> Just now
+                    </div>
+                `;
+                
+                // Add to the top of the list
+                notificationList.insertBefore(newNotificationItem, notificationList.firstChild);
+                
+                // Show toast notification
+                showToast('New deadline missed notification received');
+                
+                // Animate the notification
+                setTimeout(() => {
+                    newNotificationItem.style.backgroundColor = '';
+                }, 5000);
+            }
+        });
+        
+        // Toast notification function
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 3000);
+            }, 100);
+        }
+    </script>
+    <script src="/js/socket-notification.js" defer></script>
 </body>
 </html>

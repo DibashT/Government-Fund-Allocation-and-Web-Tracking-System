@@ -22,11 +22,11 @@ async function initializeDepartmentFunds() {
         });
         console.log(` Initialized fund for ${dept}`);
       } else {
-        console.log(`🔁 ${dept} already initialized`);
+        console.log(` ${dept} already initialized`);
       }
     }
   } catch (error) {
-    console.error("❌ Error initializing department funds:", error);
+    console.error(" Error initializing department funds:", error);
   }
 }
 
@@ -67,10 +67,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
     },
     lastLogin: {
       type: Date,
@@ -200,11 +196,10 @@ const notificationSchema = new mongoose.Schema(
     message: { type: String, required: true },
     status: { 
       type: String, 
-      enum: ["Approved", "Rejected", "Warning", "Critical", "Info", "DeadlineAlert"], 
+      enum: ["Approved", "Rejected", "Warning", "Critical", "Info", "DeadlineAlert", "DeadlineMissed"], 
       required: true 
     },  
-    recipientRole: { type: String, enum: ["Government Official", "Admin"], required: true }, 
-    isRead: { type: Boolean, default: false }
+    recipientRole: { type: String, enum: ["Government Official", "Admin", "Public"], required: true }, 
   },
   { timestamps: true }
 );
@@ -219,53 +214,12 @@ const OtpSchema = new mongoose.Schema({
 });
 const Otp = mongoose.model("Otp", OtpSchema);
 
-const postSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  content: {
-    type: String,
-    required: true
-  },
-  imageUrl: {
-    type: String,
-    required: false
-  },
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  authorName: {
-    type: String,
-    required: true
-  },
-  likes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  dislikes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Post = mongoose.model("Post", OtpSchema);
-
-
 module.exports = { 
   User, 
   Project,
   DepartmentFund,
   Notification,
-  Otp,
-  Post
+  Otp
 };
 
 

@@ -249,6 +249,9 @@ function setupFormValidation() {
             } else if (fundValue <= 0) {
                 addFieldError(allocatedFundInput, 'Allocated fund must be greater than zero');
                 hasFieldErrors = true;
+            } else if (fundValue > 20000) {
+                addFieldError(allocatedFundInput, 'Allocated fund cannot exceed Rs.20,000');
+                hasFieldErrors = true;
             } else {
                 clearFieldError(allocatedFundInput);
             }

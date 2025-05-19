@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Department Funds</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --text-color: #333;
+            --bg-color: #f8f9fa;
+            --border-color: #dee2e6;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background-color: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .alert-danger {
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            background-color: var(--primary-color);
+            color: #fff;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25);
+        }
+
+        .btn-submit {
+            background-color: var(--success-color);
+            color: #fff;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: #218838;
+        }
+
+        .funds-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .funds-table th,
+        .funds-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .funds-table th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .funds-table tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .department-name {
+            font-weight: 500;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .department-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 14px;
+        }
+
+        .fund-value {
+            font-weight: 700;
+            color: var(--success-color);
+        }
+
+        .used-value {
+            font-weight: 700;
+            color: var(--danger-color);
+        }
+
+        .remaining-value {
+            font-weight: 700;
+            color: var(--warning-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .button-group {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            
+            .funds-table {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-coins"></i> Update Department Funds</h1>
+            <div class="button-group">
+                <a href="/admin-dashboard" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+            </div>
+        </div>
+
+        <% if (success) { %>
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <%= success %>
+        </div>
+        <% } %>
+
+        <% if (error) { %>
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> <%= error %>
+        </div>
+        <% } %>
+
+        <div class="card">
+            <div class="card-header">
+                <span>Increase Department Funds</span>
+            </div>
+            <div class="card-body">
+                <form id="increase-funds-form">
+                    <div class="form-group">
+                        <label for="increaseAmount"><i class="fas fa-plus-circle"></i> Amount to Increase (Rs.)</label>
+                        <input type="number" class="form-control" id="increaseAmount" name="increaseAmount" min="1000" step="1000" placeholder="Enter amount to add to all departments" required>
+                    </div>
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <i class="fas fa-check"></i> Update Department Funds
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span>Current Department Funds</span>
+            </div>
+            <div class="card-body">
+                <table class="funds-table">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-building"></i> Department</th>
+                            <th><i class="fas fa-coins"></i> Total Fund</th>
+                            <th><i class="fas fa-money-bill-wave"></i> Used Fund</th>
+                            <th><i class="fas fa-wallet"></i> Remaining Fund</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% departments.forEach(dept => { %>
+                        <tr>
+                            <td>
+                                <div class="department-name">
+                                    <div class="department-icon">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <%= dept.department %>
+                                </div>
+                            </td>
+                            <td><span class="fund-value">Rs.<%= dept.totalFund.toLocaleString() %></span></td>
+                            <td><span class="used-value">Rs.<%= dept.usedFund.toLocaleString() %></span></td>
+                            <td><span class="remaining-value">Rs.<%= dept.remainingFund.toLocaleString() %></span></td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('increase-funds-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            submitBtn.disabled = true;
+            
+            const increaseAmount = document.getElementById('increaseAmount').value;
+            
+            try {
+                const response = await fetch('/increase-department-funds', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ increaseAmount: Number(increaseAmount) })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = '/admin/update-funds?success=' + encodeURIComponent(data.message);
+                } else {
+                    window.location.href = '/admin/update-funds?error=' + encodeURIComponent(data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+                alert('An error occurred while updating department funds. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>

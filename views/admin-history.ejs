@@ -102,7 +102,7 @@
                                     <th><i class="fas fa-list-ol"></i> S.N</th>
                                     <th><i class="fas fa-project-diagram"></i> Project Name</th>
                                     <th><i class="fas fa-building"></i> Department</th>
-                                    <th><i class="fas fa-dollar-sign"></i> Allocated Fund</th>
+                                    <th><i class="fas fa-coins"></i> Allocated Fund</th>
                                     <th><i class="fas fa-calendar-alt"></i> Start Date</th>
                                     <th><i class="fas fa-clock"></i> Deadline</th>
                                     <th><i class="fas fa-user"></i> Requested By</th>
@@ -117,7 +117,7 @@
                                         <td><%= index + 1 %></td>
                                         <td><%= project.projectName %></td>
                                         <td><%= project.department %></td>
-                                        <td>$<%= project.allocatedFund.toLocaleString() %></td>
+                                        <td>Rs.<%= project.allocatedFund.toLocaleString() %></td>
                                         <td><%= project.startDate ? project.startDate.toISOString().split('T')[0] : "N/A" %></td>
                                         <td><%= project.projectDeadline ? project.projectDeadline.toISOString().split('T')[0] : "N/A" %></td>
                                         <td><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></td>

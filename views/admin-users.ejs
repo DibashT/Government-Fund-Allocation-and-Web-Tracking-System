@@ -82,7 +82,6 @@
                                 <th><i class="fas fa-envelope"></i> Email</th>
                                 <th><i class="fas fa-phone"></i> Phone</th>
                                 <th><i class="fas fa-user-tag"></i> Role</th>
-                                <th><i class="fas fa-toggle-on"></i> Status</th>
                                 <th><i class="fas fa-sign-in-alt"></i> Last Login</th>
                                 <th><i class="fas fa-calendar-alt"></i> Created At</th>
                                 <th><i class="fas fa-cog"></i> Actions</th>
@@ -100,13 +99,7 @@
                                                 <%= user.role %>
                                             </span>
                                         </td>
-                                        <td>
-                                            <% if (user.isActive) { %>
-                                                <span class="status-active">Active</span>
-                                            <% } else { %>
-                                                <span class="status-inactive">Inactive</span>
-                                            <% } %>
-                                        </td>                                                                        
+                                                                                                          
                                         <td>
                                             <% if (user.lastLogin && !isNaN(new Date(user.lastLogin))) { %>
                                                 <%= new Date(user.lastLogin).toLocaleString() %>

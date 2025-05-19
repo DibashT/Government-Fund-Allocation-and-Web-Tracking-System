@@ -264,9 +264,9 @@
 
       <div class="stat-grid">
         <% const fundStats = [
-          { icon: 'fa-dollar-sign', label: 'Total Fund', value: `$${totalFund.toLocaleString()}`, theme: 'fund-theme-1' },
-          { icon: 'fa-money-bill-wave', label: 'Allocated Fund', value: `$${allocatedFund.toLocaleString()}`, theme: 'fund-theme-2' },
-          { icon: 'fa-wallet', label: 'Remaining Fund', value: `$${remainingFund.toLocaleString()}`, theme: 'fund-theme-3' }
+          { icon: 'fa-coins', label: 'Total Fund', value: `Rs.${totalFund.toLocaleString()}`, theme: 'fund-theme-1' },
+          { icon: 'fa-money-bill-wave', label: 'Allocated Fund', value: `Rs.${allocatedFund.toLocaleString()}`, theme: 'fund-theme-2' },
+          { icon: 'fa-wallet', label: 'Remaining Fund', value: `Rs.${remainingFund.toLocaleString()}`, theme: 'fund-theme-3' }
         ]; %>
         <% fundStats.forEach(stat => { %>
           <div class="stat-card <%= stat.theme %>">
@@ -275,6 +275,22 @@
           </div>
         <% }) %>
       </div>
+
+      <!-- Admin Action Buttons -->
+      <div class="update-funds-container" style="text-align: center; margin-top: 20px;">
+        <a href="/admin/update-funds" class="update-funds-btn" style="display: inline-block; padding: 12px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">
+          <i class="fas fa-plus-circle"></i> Update Department Funds
+        </a>
+        <a href="javascript:void(0)" onclick="createTestProjects()" class="test-projects-btn" style="display: inline-block; padding: 12px 20px; background-color: #e74c3c; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">
+          <i class="fas fa-vial"></i> Create Test Projects
+        </a>
+        <a href="javascript:void(0)" onclick="removeTestProjects()" class="remove-test-btn" style="display: inline-block; padding: 12px 20px; background-color: #7f8c8d; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">
+          <i class="fas fa-trash-alt"></i> Remove Test Projects
+        </a>
+      </div>
+      
+      <!-- Success/Error Alert -->
+      <div id="alert-container" style="margin-top: 15px; padding: 10px; border-radius: 4px; text-align: center; display: none;"></div>
     </div>
 
     <!-- Department Fund Overview -->
@@ -313,8 +329,8 @@
               <i class="fas <%= deptIcon %>"></i> <%= dept.department %>
             </h3>
             <div class="dept-fund-info">
-              <p><i class="fas fa-coins"></i> <span>Used:</span> $<%= (dept.usedFund || 0).toLocaleString() %></p>
-              <p><i class="fas fa-wallet"></i> <span>Remaining:</span> $<%= (dept.remainingFund || 0).toLocaleString() %></p>
+              <p><i class="fas fa-coins"></i> <span>Used:</span> Rs.<%= (dept.usedFund || 0).toLocaleString() %></p>
+              <p><i class="fas fa-wallet"></i> <span>Remaining:</span> Rs.<%= (dept.remainingFund || 0).toLocaleString() %></p>
             </div>
           </div>
         <% }); %>
@@ -468,13 +484,17 @@
         'Content-Type': 'application/json'
       }
     })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        window.location.href = '/login';
-      }
+    .then(function(response) {
+      return response.json();
     })
-    .catch(error => console.error('Error:', error));
+    .then(function(data) {
+      // Redirect to login page
+      window.location.href = '/login';
+    })
+    .catch(function(error) {
+      console.error('Logout error:', error);
+      alert('Logout failed. Please try again.');
+    });
   }
 
   const data = {
@@ -510,8 +530,8 @@
   }]);
 
   initializeChart('usageChart', 'doughnut', [
-    `${data.highestFundedProjectName} - $${data.highestFundedProjectAmount}`,
-    `${data.lowestFundedProjectName} - $${data.lowestFundedProjectAmount}`
+    `${data.highestFundedProjectName} - Rs.${data.highestFundedProjectAmount}`,
+    `${data.lowestFundedProjectName} - Rs.${data.lowestFundedProjectAmount}`
   ], [{
     data: [data.highestFundedProjectAmount, data.lowestFundedProjectAmount],
     backgroundColor: ['#f39c12', '#8e44ad']
@@ -624,7 +644,7 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'Fund Amount ($)'
+                text: 'Fund Amount (Rs.)'
               }
             }
           },
@@ -635,7 +655,7 @@
                   return new Date(tooltipItems[0].raw.x).toLocaleDateString();
                 },
                 label: function(context) {
-                  return `${context.dataset.label}: $${context.raw.y.toLocaleString()}`;
+                  return `${context.dataset.label}: Rs.${context.raw.y.toLocaleString()}`;
                 }
               }
             },
@@ -816,7 +836,7 @@
                 </div>
                 <div class="project-detail">
                   <div class="label"><i class="fas fa-dollar-sign"></i> Allocated Fund:</div>
-                  <div>$${project.allocatedFund.toLocaleString()}</div>
+                  <div>Rs.${project.allocatedFund.toLocaleString()}</div>
                 </div>
                 <div class="project-detail">
                   <div class="label"><i class="fas fa-calendar-day"></i> Start Date:</div>
@@ -888,6 +908,83 @@
       });
     }
   });
+  // Function to create test projects with missed deadlines
+  async function createTestProjects() {
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.style.display = 'block';
+    alertContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating test projects with missed deadlines...';
+    alertContainer.style.backgroundColor = '#f8f9fa';
+    alertContainer.style.color = '#333';
+    
+    try {
+      const response = await fetch('/create-test-projects');
+      const result = await response.text();
+      
+      if (response.ok) {
+        alertContainer.innerHTML = `<i class="fas fa-check-circle"></i> ${result}`;
+        alertContainer.style.backgroundColor = '#d4edda';
+        alertContainer.style.color = '#155724';
+        
+        // Update the project statistics after a delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 5000);
+      } else {
+        alertContainer.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${result}`;
+        alertContainer.style.backgroundColor = '#f8d7da';
+        alertContainer.style.color = '#721c24';
+      }
+    } catch (error) {
+      alertContainer.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${error.message}`;
+      alertContainer.style.backgroundColor = '#f8d7da';
+      alertContainer.style.color = '#721c24';
+    }
+  }
+  
+  // Function to remove test projects with missed deadlines
+  async function removeTestProjects() {
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.style.display = 'block';
+    alertContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Removing test projects and their notifications...';
+    alertContainer.style.backgroundColor = '#f8f9fa';
+    alertContainer.style.color = '#333';
+    
+    if (!confirm('Are you sure you want to remove all test projects and their notifications?')) {
+      alertContainer.innerHTML = '<i class="fas fa-info-circle"></i> Removal canceled.';
+      alertContainer.style.backgroundColor = '#e2e3e5';
+      alertContainer.style.color = '#383d41';
+      return;
+    }
+    
+    try {
+      const response = await fetch('/remove-test-projects');
+      const result = await response.text();
+      
+      if (response.ok) {
+        alertContainer.innerHTML = `<i class="fas fa-check-circle"></i> ${result}`;
+        alertContainer.style.backgroundColor = '#d4edda';
+        alertContainer.style.color = '#155724';
+        
+        // Update the project statistics after a delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 5000);
+      } else {
+        alertContainer.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${result}`;
+        alertContainer.style.backgroundColor = '#f8d7da';
+        alertContainer.style.color = '#721c24';
+      }
+    } catch (error) {
+      alertContainer.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error: ${error.message}`;
+      alertContainer.style.backgroundColor = '#f8d7da';
+      alertContainer.style.color = '#721c24';
+    }
+  }
+  
+  // Function to handle logout
+  function logout() {
+    window.location.href = '/logout';
+  }
 </script>
 </body>
 </html>

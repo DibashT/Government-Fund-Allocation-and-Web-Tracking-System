@@ -244,10 +244,8 @@
                             <th>Allocated Fund</th>
                             <th>Start Date</th>
                             <th>Deadline</th>
-                            <th>Details</th>
-                            <th>File Attachment</th>
                             <th>Requested By</th>
-                            <th>Location</th>
+                            <th>Details</th>
                             <th>Actions</th>
                             <th>Generate Bill</th>
                         </tr>
@@ -259,30 +257,22 @@
                                     <td><%= index + 1 %></td>
                                     <td><%= project.projectName %></td>
                                     <td><%= project.department %></td>
-                                    <td>$<%= project.allocatedFund.toLocaleString() %></td>
+                                    <td>Rs.<%= project.allocatedFund.toLocaleString() %></td>
                                     <td><%= new Date(project.startDate).toLocaleDateString() %></td>
                                     <td><%= new Date(project.projectDeadline).toLocaleDateString() %></td>
-                                    <td>
-                                        <button class="view-btn" data-project-id="<%= project._id %>">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <% if (project.fileAttachment) { %>
-                                            <a href="/file-view/<%= encodeURIComponent(project.fileAttachment) %>" target="_blank">📎File</a>
-                                        <% } else { %>
-                                            No file attached
-                                        <% } %>
-                                    </td>
                                     <td><%= project.requestedBy ? project.requestedBy.name : "Unknown" %></td>
                                     <td>
-                                        <% if (project.location && project.location.coordinates && project.location.coordinates.length === 2) { %>
-                                            <span title="Latitude: <%= project.location.coordinates[1] %>, Longitude: <%= project.location.coordinates[0] %>">
-                                                <%= project.location.coordinates[1].toFixed(4) %>, <%= project.location.coordinates[0].toFixed(4) %>
-                                            </span>
-                                        <% } else { %>
-                                            <span class="no-location">Not available</span>
-                                        <% } %>
+                                        <button class="view-btn" data-project-id="<%= project._id %>" 
+                                            data-has-file="<%= project.fileAttachment ? 'true' : 'false' %>"
+                                            data-file-path="<%= project.fileAttachment ? encodeURIComponent(project.fileAttachment) : '' %>"
+                                            data-has-location="<%= (project.location && project.location.coordinates && project.location.coordinates.length === 2) ? 'true' : 'false' %>"
+                                            <% if (project.location && project.location.coordinates && project.location.coordinates.length === 2) { %>
+                                            data-lat="<%= project.location.coordinates[1] %>"
+                                            data-lng="<%= project.location.coordinates[0] %>"
+                                            <% } %>
+                                        >
+                                            <i class="fas fa-eye"></i> View 
+                                        </button>
                                     </td>
                                     <td class="actions">
                                         <% if (project.status === "Approved") { %>
@@ -458,10 +448,18 @@
             <div class="modal-section">
                 <p id="projectDescription">Loading...</p>
             </div>
-    
-            <!-- Location section (hidden by JS) -->
-            <div class="modal-section">
-                <p id="projectLocation" style="display: none;"><strong>Location:</strong> <span id="locationCoordinates">Loading...</span></p>
+            
+            <!-- Location section -->
+            <div class="modal-section location-section" style="display: none;">
+                <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+                <p id="projectLocation"></p>
+                <div id="locationMap" style="height: 200px; margin-top: 10px;"></div>
+            </div>
+            
+            <!-- File attachment section -->
+            <div class="modal-section file-section" style="display: none;">
+                <h3><i class="fas fa-file-alt"></i> File Attachment</h3>
+                <p id="fileAttachment"></p>
             </div>
         </div>
     </div>
@@ -557,5 +555,12 @@
     </script>
 
     <script src="/js/request.js"></script>
+    
+    <!-- Socket.io and notifications -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/socket-notification.js"></script>
+    
+    <!-- Toast container for notifications -->
+    <div id="toast-container" class="toast-container"></div>
 </body>
 </html>

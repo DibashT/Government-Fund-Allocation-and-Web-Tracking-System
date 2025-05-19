@@ -63,23 +63,51 @@ function showToast(message, type = "success") {
 function openPopup(projectId) {
   const modal = getEl("projectModal");
   const description = getEl("projectDescription");
+  const locationSection = document.querySelector('.location-section');
+  const fileSection = document.querySelector('.file-section');
   const locationElement = getEl("projectLocation");
+  const fileElement = getEl("fileAttachment");
 
   if (!modal || !description) return;
 
+  // Reset all elements
   description.innerHTML = "Loading...";
+  locationSection.style.display = "none";
+  fileSection.style.display = "none";
   
-  // Hide the location element
-  if (locationElement) {
-    locationElement.style.display = "none";
-  }
+  // Get clicked button to access data attributes
+  const clickedButton = document.querySelector(`button[data-project-id="${projectId}"]`);
+  if (!clickedButton) return;
+  
+  // Get data attributes from button
+  const hasFile = clickedButton.getAttribute("data-has-file") === "true";
+  const filePath = clickedButton.getAttribute("data-file-path");
+  const hasLocation = clickedButton.getAttribute("data-has-location") === "true";
+  const lat = hasLocation ? parseFloat(clickedButton.getAttribute("data-lat")) : null;
+  const lng = hasLocation ? parseFloat(clickedButton.getAttribute("data-lng")) : null;
 
+  // Fetch and show project details
   fetch(`/project-details/${projectId}`)
     .then(res => res.json())
     .then(data => {
       description.innerHTML = data.success
         ? data.projectDetails || "No details available."
         : "Project details not found.";
+      
+      // Show location if available
+      if (hasLocation && locationElement) {
+        locationSection.style.display = "block";
+        locationElement.innerHTML = `<strong>Coordinates:</strong> ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+      
+      // Show file attachment if available
+      if (hasFile && fileElement) {
+        fileSection.style.display = "block";
+        fileElement.innerHTML = `<a href="/file-view/${filePath}" target="_blank" class="file-link">
+          <i class="fas fa-file-download"></i> View Attached File
+        </a>`;
+      }
+      
       modal.style.display = "flex";
     })
     .catch(() => {

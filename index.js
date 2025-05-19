@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ejsLayouts = require('ejs-layouts');
 const { User, Project, DepartmentFund, Notification, Otp, Post } = require('./config');
-const { authMiddleware } = require("./authMiddleware");
+const { authMiddleware, redirectIfAuthenticated } = require("./authMiddleware");
 const upload = require("./config/uploadConfig");
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
@@ -209,12 +209,55 @@ setTimeout(async () => {
   }
 }, 10000); // Wait 10 seconds after server start
 
-app.get("",(req,res)=>{
-  res.render("login");
+
+// Apply redirectIfAuthenticated middleware to root and login pages
+app.get("", redirectIfAuthenticated, (req, res) => {
+  res.render("login", { 
+    error: req.query.error,
+    returnUrl: req.query.returnUrl || ''
+  });
 })
 
-app.get("/login",(req,res)=>{
-  res.render("login");
+app.get("/login", redirectIfAuthenticated, (req, res) => {
+  res.render("login", { 
+    error: req.query.error,
+    returnUrl: req.query.returnUrl || ''
+  });
+})
+
+
+// GET route for direct links
+app.get("/logout", (req, res) => {
+  // Clear the token cookie
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    path: "/" 
+  });
+  
+  // Log the logout action
+  console.log(`User logged out via GET request`);
+  
+  // Redirect to login page with a success message
+  res.redirect('/login?message=' + encodeURIComponent('You have been successfully logged out.'));
+});
+
+// POST route for JavaScript fetch calls
+app.post("/logout", (req, res) => {
+  // Clear the token cookie - use the same settings as when it was set
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    path: "/" 
+  });
+  
+  // Log the logout action
+  console.log(`User logged out via POST request`);
+  
+  // Return JSON response for fetch API
+  res.json({ success: true, message: 'Logged out successfully' });
 })
 
 // Verify email configuration on startup
@@ -231,8 +274,7 @@ app.get('/signup', (req, res) => {
     res.render('signup', { message: req.query.message });
 });
 
-
-
+// Fund data route for analytics
 app.get("/fund-data", async (req, res) => {
   const { type } = req.query;
   let groupStage = {};
@@ -311,6 +353,7 @@ app.get("/fund-data-detailed", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
 app.get("/admin-dashboard", authMiddleware, async (req, res) => {
   try {
     // Parallelize all count queries
@@ -551,7 +594,6 @@ app.get("/minister-dashboard", authMiddleware, async (req, res) => {
         actualCompletionDate: { $ne: null }
       }).sort({ actualCompletionDate: -1, updatedAt: -1 }).limit(3).lean(),
       User.aggregate([ // New role count aggregation
-        { $match: { isActive: true } },
         {
           $group: {
             _id: "$role",
@@ -771,7 +813,6 @@ app.get("/officials-dashboard", authMiddleware, async (req, res) => {
         actualCompletionDate: { $ne: null }
       }).sort({ actualCompletionDate: -1, updatedAt: -1 }).limit(3).lean(),
       User.aggregate([ // New role count aggregation
-        { $match: { isActive: true } },
         {
           $group: {
             _id: "$role",
@@ -909,7 +950,6 @@ app.get("/public-dashboard", authMiddleware, async (req, res) => {
         actualCompletionDate: { $ne: null }
       }).sort({ actualCompletionDate: -1, updatedAt: -1 }).limit(3).lean(),
       User.aggregate([ // New role count aggregation
-        { $match: { isActive: true } },
         {
           $group: {
             _id: "$role",
@@ -1007,6 +1047,170 @@ app.get("/public-dashboard", authMiddleware, async (req, res) => {
   }
 });
 
+// Public Notification Page Route
+app.get('/public-notification', authMiddleware, async (req, res) => {
+  try {
+    // Fetch notifications addressed to Public users
+    const notifications = await Notification.find({
+      recipientRole: "Public",
+      status: "DeadlineMissed"
+    }).populate('projectId').sort({ createdAt: -1 });
+
+    console.log('Public notifications found:', notifications.length);
+    
+    res.render('public-notification', {
+      user: req.user,
+      notifications: notifications
+    });
+  } catch (error) {
+    console.error("Error fetching public notifications:", error);
+    res.status(500).send("Internal server error. Please try again later.");
+  }
+});
+
+// Test route to manually trigger deadline check
+app.get('/test-missed-deadline', authMiddleware, async (req, res) => {
+  try {
+    // Get any approved ongoing project to modify for testing
+    const testProject = await Project.findOne({ 
+      status: "Approved", 
+      progressStatus: "Ongoing" 
+    });
+    
+    if (testProject) {
+      // Set the deadline to 10 days ago for testing
+      const pastDeadline = new Date();
+      pastDeadline.setDate(pastDeadline.getDate() - 10);
+      
+      await Project.updateOne(
+        { _id: testProject._id },
+        { $set: { projectDeadline: pastDeadline } }
+      );
+      
+      console.log(`Test project ${testProject.projectName} deadline set to 10 days ago`);
+    } else {
+      console.log('No eligible test project found');
+    }
+    
+    // Run the deadline check
+    const { checkProjectDeadlines } = require('./utils/checkDeadlines');
+    await checkProjectDeadlines();
+    
+    // Check if notification was created
+    const notifications = await Notification.find({
+      recipientRole: "Public",
+      status: "DeadlineMissed"
+    }).sort({ createdAt: -1 });
+    
+    res.send(`Deadline check triggered successfully. ${notifications.length} public notifications found. Check console for results.`);
+  } catch (error) {
+    console.error('Error triggering deadline check:', error);
+    res.status(500).send('Error triggering deadline check: ' + error.message);
+  }
+});
+
+// Create multiple test projects with missed deadlines
+app.get('/create-test-projects', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') {
+      return res.status(403).send('Only admins can create test projects');
+    }
+    
+    const departments = [
+      "Ministry of Education",
+      "Ministry of Health",
+      "Ministry of Transport",
+      "Ministry of Agriculture",
+      "Ministry of Finance"
+    ];
+    
+    const today = new Date();
+    const testProjects = [];
+    
+    // Create 5 test projects with different missed deadlines
+    for (let i = 0; i < 5; i++) {
+      // Each project missed deadline by a different number of days (5, 10, 15, 20, 25 days ago)
+      const missedBy = (i + 1) * 5;
+      const pastDeadline = new Date();
+      pastDeadline.setDate(pastDeadline.getDate() - missedBy);
+      
+      const startDate = new Date(pastDeadline);
+      startDate.setDate(startDate.getDate() - 30); // Start date 30 days before deadline
+      
+      const testProject = new Project({
+        projectName: `Test Project - Missed by ${missedBy} days`,
+        allocatedFund: 10000 + (i * 5000),
+        department: departments[i % departments.length],
+        startDate: startDate,
+        projectDeadline: pastDeadline,
+        projectDetails: `This is a test project that missed its deadline by ${missedBy} days. Created for testing the public notification system.`,
+        requestedBy: req.user._id,
+        status: "Approved",
+        progressStatus: "Ongoing",
+        location: {
+          type: "Point",
+          coordinates: [85.3240 + (i * 0.01), 27.7172 + (i * 0.01)] // Different locations around Kathmandu
+        },
+        progress: 50 // Set to 50% progress
+      });
+      
+      await testProject.save();
+      testProjects.push(testProject);
+    }
+    
+    // Run the deadline check
+    const { checkProjectDeadlines } = require('./utils/checkDeadlines');
+    await checkProjectDeadlines();
+    
+    // Check how many notifications were created
+    const notifications = await Notification.find({
+      recipientRole: "Public",
+      status: "DeadlineMissed"
+    }).sort({ createdAt: -1 });
+    
+    res.send(`Created ${testProjects.length} test projects with missed deadlines. There are now ${notifications.length} public notifications. Visit /public-notification to view them.`);
+  } catch (error) {
+    console.error('Error creating test projects:', error);
+    res.status(500).send('Error creating test projects: ' + error.message);
+  }
+});
+
+// Remove test projects and their notifications
+app.get('/remove-test-projects', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') {
+      return res.status(403).send('Only admins can remove test projects');
+    }
+    
+    // Find all test projects by their name pattern
+    const testProjects = await Project.find({
+      projectName: { $regex: /^Test Project - Missed by \d+ days$/ }
+    });
+    
+    if (testProjects.length === 0) {
+      return res.send('No test projects found to remove.');
+    }
+    
+    // Get the IDs of all test projects
+    const projectIds = testProjects.map(project => project._id);
+    
+    // First delete all notifications related to these projects
+    const deletedNotifications = await Notification.deleteMany({
+      projectId: { $in: projectIds }
+    });
+    
+    // Then delete the test projects
+    const deletedProjects = await Project.deleteMany({
+      _id: { $in: projectIds }
+    });
+    
+    res.send(`Removed ${deletedProjects.deletedCount} test projects and ${deletedNotifications.deletedCount} related notifications.`);
+  } catch (error) {
+    console.error('Error removing test projects:', error);
+    res.status(500).send('Error removing test projects: ' + error.message);
+  }
+});
+
 // Public Post Page Route
 app.get('/public-post', authMiddleware, async (req, res) => {
   try {
@@ -1057,10 +1261,11 @@ app.get("/edit-user", (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { username, password, remember } = req.body;
+    const { username, password, remember, returnUrl } = req.body;
 
     if (!username || !password) {
-      return res.redirect('/login?error=' + encodeURIComponent('Username and password are required'));
+      return res.redirect('/login?error=' + encodeURIComponent('Username and password are required') + 
+        (returnUrl ? '&returnUrl=' + encodeURIComponent(returnUrl) : ''));
     }
 
     // Find user by username or email for more flexible login
@@ -1069,18 +1274,17 @@ app.post("/login", async (req, res) => {
     });
     
     if (!checkUser) {
-      return res.redirect('/login?error=' + encodeURIComponent('Invalid credentials'));
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid credentials') + 
+        (returnUrl ? '&returnUrl=' + encodeURIComponent(returnUrl) : ''));
     }
 
     const passwordMatch = await bcrypt.compare(password, checkUser.password);
     if (!passwordMatch) {
       // Use generic error message for security
-      return res.redirect('/login?error=' + encodeURIComponent('Invalid credentials'));
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid credentials') + 
+        (returnUrl ? '&returnUrl=' + encodeURIComponent(returnUrl) : ''));
     }
 
-    if (!checkUser.isActive) {
-      return res.redirect('/login?error=' + encodeURIComponent('Your account is deactivated. Please contact support.'));
-    }
 
     // Update last login time
     await User.updateOne(
@@ -1088,8 +1292,9 @@ app.post("/login", async (req, res) => {
       { $set: { lastLogin: new Date() } }
     );
 
-    // Determine token expiration based on remember me option
-    const expiresIn = remember ? "30d" : "7h";
+    // Always use long expiration for better user experience
+    // Default to 30 days, but if remember me is checked, use 1 year
+    const expiresIn = remember ? "365d" : "30d";
     
     // Generate JWT with appropriate claims and expiration
     const token = jwt.sign(
@@ -1104,17 +1309,26 @@ app.post("/login", async (req, res) => {
     );    
 
     // Set cookie expiration based on remember me option
-    const cookieMaxAge = remember ? 30 * 24 * 60 * 60 * 1000 : 7 * 60 * 60 * 1000; // 30 days or 7 hours
+    const cookieMaxAge = remember ? 365 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000; // 1 year or 30 days
 
     // Set secure cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", 
-      sameSite: "Strict",
+      sameSite: "Lax", // Changed from Strict to Lax for better UX
       maxAge: cookieMaxAge,
+      path: "/" // Ensure cookie is available across the entire site
     });
 
-    // Redirect based on role
+    // Log the successful login
+    console.log(`User ${checkUser.name} (${checkUser.role}) logged in successfully`);
+    
+    // If returnUrl is provided and safe, redirect there
+    if (returnUrl && returnUrl.startsWith('/') && !returnUrl.includes('//')) {
+      return res.redirect(returnUrl);
+    }
+    
+    // Otherwise redirect based on role
     switch (checkUser.role) {
       case "Admin":
         return res.redirect("/admin-dashboard");
@@ -1192,7 +1406,6 @@ app.post('/signup', otpLimiter, async (req, res) => {
                 phone: phone.trim(),
                 role,
                 password: hashedPassword,
-                isActive: true,
                 lastLogin: null
             },
         });
@@ -1566,17 +1779,88 @@ app.get('/resend-otp', otpLimiter, async (req, res) => {
     }
 });
 
-
-
-app.get('/officials-notification',authMiddleware, async (req, res) => {
+// Route to increase funds for all departments
+app.post('/increase-department-funds', authMiddleware, async (req, res) => {
   try {
-    const notifications = await Notification.find({ recipientRole: "Government Official" })
-      .sort({ createdAt: -1 });
+    // Check if user is admin
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Only administrators can update department funds' 
+      });
+    }
 
-    res.render('officials-notification', { notifications, user: req.user });
+    const { increaseAmount } = req.body;
+    
+    // Validate increase amount
+    if (!increaseAmount || isNaN(increaseAmount) || increaseAmount <= 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide a valid positive increase amount' 
+      });
+    }
+
+    // Get all departments
+    const departments = await DepartmentFund.find({});
+    
+    // Update each department's total and remaining funds
+    for (const dept of departments) {
+      dept.totalFund += Number(increaseAmount);
+      dept.remainingFund += Number(increaseAmount);
+      await dept.save();
+      console.log(`Updated funds for ${dept.department}: Total fund now Rs.${dept.totalFund.toLocaleString()}`);
+    }
+
+    return res.json({ 
+      success: true, 
+      message: `Successfully increased funds by Rs.${Number(increaseAmount).toLocaleString()} for all departments`,
+      departments: departments
+    });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res.status(500).send("Internal Server Error");
+    console.error('Error increasing department funds:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'An error occurred while updating department funds' 
+    });
+  }
+});
+
+// Admin interface for increasing funds
+app.get('/admin/update-funds', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'Admin') {
+      return res.redirect('/admin-dashboard?error=' + encodeURIComponent('Only administrators can access this page'));
+    }
+
+    // Get all departments with their current funds
+    const departments = await DepartmentFund.find({}).sort({ department: 1 });
+    
+    res.render('admin-update-funds', { 
+      departments,
+      user: req.user,
+      success: req.query.success,
+      error: req.query.error
+    });
+  } catch (error) {
+    console.error('Error loading update funds page:', error);
+    res.redirect('/admin-dashboard?error=' + encodeURIComponent('Error loading update funds page'));
+  }
+});
+
+app.post('/test-deadline-notification', authMiddleware, async (req, res) => {
+  try {
+    const newNotification = await Notification.create({
+      title: "Project Deadline Alert",
+      message: "Test notification: The project's deadline is approaching.",
+      type: "warning",
+      recipientRole: "Government Official",
+    });
+
+    res.json({ success: true, notification: newNotification });
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    res.status(500).json({ success: false, error: "Failed to create test notification" });
   }
 });
 
@@ -1642,12 +1926,6 @@ app.get("/admin-users", async (req, res) => {
     users.forEach(user => {
       user.lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleString() : "Never";
 
-      // Set the user status based on the isActive field (assuming isActive is a boolean)
-      if (user.isActive === true || user.isActive === "true" || user.isActive === 1) {
-        user.status = "Active";
-      } else {
-        user.status = "Inactive";
-      }
     });
 
     res.render("admin-users", { users }); // Pass the users variable, not User
@@ -2122,10 +2400,16 @@ app.post("/approve-project/:id", authMiddleware, async (req, res) => {
       message,
       status: "Approved",
       recipientRole: "Government Official",
+      recipientId: project.requestedBy // Add the specific user ID
     });
 
     const io = req.app.get("io");
-    io.emit("new-notification", { message, status: "Approved" });
+    io.emit("new-notification", { 
+      message, 
+      status: "Approved",
+      projectId: project._id,
+      timestamp: new Date()
+    });
 
     res.json({ success: true, message: "Project approved successfully!" });
   } catch (error) {
@@ -2159,10 +2443,16 @@ app.post("/reject-project/:id", authMiddleware, async (req, res) => {
       message,
       status: "Rejected",
       recipientRole: "Government Official",
+      recipientId: project.requestedBy // Add the specific user ID
     });
 
     const io = req.app.get("io");
-    io.emit("new-notification", { message, status: "Rejected" });
+    io.emit("new-notification", { 
+      message, 
+      status: "Rejected",
+      projectId: project._id,
+      timestamp: new Date()
+    });
 
     res.json({ success: true, message: "Project rejected successfully" });
   } catch (error) {
@@ -2864,23 +3154,41 @@ app.get('/minister-request', authMiddleware, async (req, res) => {
 
 app.get("/officials-notification", authMiddleware, async (req, res) => {
   try {
-    const userRole = req.user.role;  // Assuming the role is stored in the user object after login
+    const userId = req.user._id;
+    const userRole = req.user.role;
 
     // Fetch Approval or Rejection notifications for the logged-in user
+    // Query by either the specific user ID or by role (for older notifications)
     const approvalNotifications = await Notification.find({
-      recipientRole: userRole,  // Filter by role
-      status: { $in: ["Approved", "Rejected"] }
+      $and: [
+        { status: { $in: ["Approved", "Rejected"] } },
+        { $or: [
+          { recipientId: userId }, // Specific to this user
+          { recipientRole: userRole, recipientId: { $exists: false } } // Role-based (legacy)
+        ]}
+      ]
     })
-      .populate("projectId", "name")
+      .populate("projectId") // Populate the full project to access projectName
+      .sort({ createdAt: -1 }) // Sort by newest first
       .lean();
+    
+    console.log("Approval notifications found:", approvalNotifications.length);
 
     // Fetch Deadline Alert notifications for the logged-in user
     const deadlineNotifications = await Notification.find({
-      recipientRole: userRole,  // Filter by role
-      status: "DeadlineAlert"    // Use the updated status for deadline notifications
+      $and: [
+        { status: "DeadlineAlert" },
+        { $or: [
+          { recipientId: userId }, // Specific to this user
+          { recipientRole: userRole, recipientId: { $exists: false } } // Role-based (legacy)
+        ]}
+      ]
     })
-      .populate("projectId", "name")
+      .populate("projectId") // Populate the full project
+      .sort({ createdAt: -1 }) // Sort by newest first
       .lean();
+      
+    console.log("Deadline notifications found:", deadlineNotifications.length);
 
     res.render("officials-notification", {
       notifications: {
@@ -2993,16 +3301,6 @@ app.get('/admin-notifications',authMiddleware, async (req, res) => {
 
 express.application.get("/protected-route", authMiddleware, (req, res) => {
   res.json({ message: "Access granted!", user: req.user });
-});
-
-app.post("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-  });
-
-  res.redirect("/login");  // Redirect to login page after logging out
 });
 
 
@@ -3142,6 +3440,78 @@ app.get('/minister-profile', authMiddleware, async (req, res) => {
   }
 });
 
+
+// Profile update route for ministers
+app.post('/public-profile/update', authMiddleware, async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    
+    // Update user data
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, email, phone },
+      { new: true } // This ensures we get the updated document
+    );
+
+    if (!updatedUser) {
+        console.error("User not found during minister profile update:", req.user._id);
+        // Redirect with error message if user not found, should ideally not happen
+        return res.redirect('/public-profile?error=User not found during update');
+    }
+
+    // Update the user data in the req.user object (optional, but good practice)
+    req.user.name = updatedUser.name;
+    req.user.email = updatedUser.email;
+    req.user.phone = updatedUser.phone;
+    // Note: Role and other sensitive info are not updated via this route
+
+    // Re-generate JWT token with updated user information
+    const token = jwt.sign(
+        {
+            _id: updatedUser._id.toString(),
+            role: updatedUser.role,
+            name: updatedUser.name,
+            email: updatedUser.email
+        },
+        SECRET_KEY,
+        { expiresIn: "7h" } // Set expiration (e.g., 7 hours, matching non-remember me login)
+    );
+
+    // Set the new token as a cookie
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 7 * 60 * 60 * 1000, // 7 hours in milliseconds
+    });
+
+    // Redirect with success message
+    res.redirect('/public-profile?success=Profile updated successfully');
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.redirect('/public-profile?error=Error updating profile');
+  }
+});
+
+app.get('/public-profile', authMiddleware, async (req, res) => {
+  try {
+    // Get user data from the database to ensure we have the most up-to-date information
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    
+    res.render('public-profile', { 
+      user,
+      success: req.query.success,
+      error: req.query.error
+    });
+  } catch (error) {
+    console.error("Error fetching profile data:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
 
 app.post('/test-deadline-notification', authMiddleware, async (req, res) => {
   try {

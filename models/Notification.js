@@ -6,10 +6,10 @@ const notificationSchema = new mongoose.Schema(
     message: { type: String, required: true },
     status: { 
       type: String, 
-      enum: ["Approved", "Rejected", "Warning", "Critical", "Info"], 
+      enum: ["Approved", "Rejected", "Warning", "Critical", "Info", "DeadlineAlert", "DeadlineMissed"], 
       required: true 
     }, // Expanded to support various types of notifications
-    recipientRole: { type: String, enum: ["Government Official", "Admin"], required: true }, 
+    recipientRole: { type: String, enum: ["Government Official", "Admin", "Public"], required: true }, 
     isRead: { type: Boolean, default: false }
   },
   { timestamps: true }

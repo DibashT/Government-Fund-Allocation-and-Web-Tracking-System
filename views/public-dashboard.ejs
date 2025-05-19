@@ -211,7 +211,7 @@
     <h2><img src="/images/logo.png" class="logo" alt="Logo"></h2>
     <ul>
       <li><a href="/public-dashboard" class="active"><i class="fas fa-home"></i> Home</a></li>
-      <li><a href="/public-post"><i class="fas fa-tasks"></i> Post</a></li>
+      <!-- <li><a href="/public-post"><i class="fas fa-tasks"></i> Post</a></li> -->
       <li><a href="/public-notification" ><i class="fas fa-chart-line"></i> Notification</a></li>
     </ul>
   </div>
@@ -247,9 +247,9 @@
 
       <div class="stat-grid">
         <% const fundStats = [
-          { icon: 'fa-dollar-sign', label: 'Total Fund', value: `$${totalFund.toLocaleString()}`, theme: 'fund-theme-1' },
-          { icon: 'fa-money-bill-wave', label: 'Allocated Fund', value: `$${allocatedFund.toLocaleString()}`, theme: 'fund-theme-2' },
-          { icon: 'fa-wallet', label: 'Remaining Fund', value: `$${remainingFund.toLocaleString()}`, theme: 'fund-theme-3' }
+          { icon: 'fa-coins', label: 'Total Fund', value: `Rs.${totalFund.toLocaleString()}`, theme: 'fund-theme-1' },
+          { icon: 'fa-money-bill-wave', label: 'Allocated Fund', value: `Rs.${allocatedFund.toLocaleString()}`, theme: 'fund-theme-2' },
+          { icon: 'fa-wallet', label: 'Remaining Fund', value: `Rs.${remainingFund.toLocaleString()}`, theme: 'fund-theme-3' }
         ]; %>
         <% fundStats.forEach(stat => { %>
           <div class="stat-card <%= stat.theme %>">
@@ -296,8 +296,8 @@
               <i class="fas <%= deptIcon %>"></i> <%= dept.department %>
             </h3>
             <div class="dept-fund-info">
-              <p><i class="fas fa-coins"></i> <span>Used:</span> $<%= (dept.usedFund || 0).toLocaleString() %></p>
-              <p><i class="fas fa-wallet"></i> <span>Remaining:</span> $<%= (dept.remainingFund || 0).toLocaleString() %></p>
+              <p><i class="fas fa-coins"></i> <span>Used:</span> Rs.<%= (dept.usedFund || 0).toLocaleString() %></p>
+              <p><i class="fas fa-wallet"></i> <span>Remaining:</span> Rs.<%= (dept.remainingFund || 0).toLocaleString() %></p>
             </div>
           </div>
         <% }); %>
@@ -526,20 +526,24 @@
   };
 
   function logout() {
-    fetch('/logout', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
+      fetch('/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(data) {
+        // Redirect to login page
         window.location.href = '/login';
-      }
-    })
-    .catch(error => console.error('Error:', error));
-  }
+      })
+      .catch(function(error) {
+        console.error('Logout error:', error);
+        alert('Logout failed. Please try again.');
+      });
+    }
 
   const data = {
     allocatedFund: <%= allocatedFund %>,
@@ -578,8 +582,8 @@
     }]);
 
     initializeChart('usageChart', 'doughnut', [
-      `${data.highestFundedProjectName} - $${data.highestFundedProjectAmount}`,
-      `${data.lowestFundedProjectName} - $${data.lowestFundedProjectAmount}`
+      `${data.highestFundedProjectName} - Rs.${data.highestFundedProjectAmount}`,
+      `${data.lowestFundedProjectName} - Rs.${data.lowestFundedProjectAmount}`
     ], [{
       data: [data.highestFundedProjectAmount, data.lowestFundedProjectAmount],
       backgroundColor: CHART_COLORS.usage
@@ -693,7 +697,7 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'Fund Amount ($)'
+                text: 'Fund Amount (Rs.)'
               }
             }
           },
@@ -704,7 +708,7 @@
                   return new Date(tooltipItems[0].raw.x).toLocaleDateString();
                 },
                 label: function(context) {
-                  return `${context.dataset.label}: $${context.raw.y.toLocaleString()}`;
+                  return `${context.dataset.label}: Rs.${context.raw.y.toLocaleString()}`;
                 }
               }
             },
@@ -870,8 +874,8 @@
                   <div>${project.department}</div>
                 </div>
                 <div class="project-detail">
-                  <div class="label"><i class="fas fa-dollar-sign"></i> Allocated Fund:</div>
-                  <div>$${project.allocatedFund.toLocaleString()}</div>
+                  <div class="label"><i class="fas fa-coins"></i> Allocated Fund:</div>
+                  <div>Rs.${project.allocatedFund.toLocaleString()}</div>
                 </div>
                 <div class="project-detail">
                   <div class="label"><i class="fas fa-calendar-day"></i> Start Date:</div>
