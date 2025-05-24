@@ -3263,31 +3263,31 @@ async function sendAdminNotification(message, status) {
   }
 }
 
-// Function to update department funds and send a notification if funds are low
-async function updateDepartmentFund(departmentId, newFundValue) {
-  try {
-    // Find the department and update the fund value
-    const department = await DepartmentFund.findById(departmentId);
-    if (!department) throw new Error("Department not found");
+// // Function to update department funds and send a notification if funds are low
+// async function updateDepartmentFund(departmentId, newFundValue) {
+//   try {
+//     // Find the department and update the fund value
+//     const department = await DepartmentFund.findById(departmentId);
+//     if (!department) throw new Error("Department not found");
 
-    // Update the fund value
-    department.remainingFund = newFundValue;
-    await department.save();
+//     // Update the fund value
+//     department.remainingFund = newFundValue;
+//     await department.save();
 
-    // Check if the fund is below the threshold after update
-    if (newFundValue < 10000) {
-      // Send a notification immediately if the fund is below 10,000
-      const message = `Warning: Funds for ${department.department} are below 10,000.`;
-      await sendAdminNotification(message, 'Warning');
+//     // Check if the fund is below the threshold after update
+//     if (newFundValue < 10000) {
+//       // Send a notification immediately if the fund is below 10,000
+//       const message = `Warning: Funds for ${department.department} are below 10,000.`;
+//       await sendAdminNotification(message, 'Warning');
       
-      // Use the fund alert handler to emit the socket notification
-      fundAlertHandler.emitFundAlert(department.department, newFundValue);
-    }
+//       // Use the fund alert handler to emit the socket notification
+//       fundAlertHandler.emitFundAlert(department.department, newFundValue);
+//     }
 
-  } catch (error) {
-    console.error("Error updating department fund:", error);
-  }
-}
+//   } catch (error) {
+//     console.error("Error updating department fund:", error);
+//   }
+// }
 
 // Endpoint to get admin notifications (render view)
 app.get('/admin-notifications',authMiddleware, async (req, res) => {

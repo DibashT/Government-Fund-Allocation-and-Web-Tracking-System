@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up - Government Fund Allocation System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="/signup.css">
+  <style>
+    /* Toast notification styles */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      min-width: 250px;
+      max-width: 350px;
+      background-color: #f44336;
+      color: white;
+      text-align: center;
+      border-radius: 5px;
+      padding: 16px;
+      z-index: 1000;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      font-size: 1rem;
+      transform: translateX(400px);
+      transition: transform 0.3s ease-in-out;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .toast.show {
+      transform: translateX(0);
+    }
+    
+    .toast i {
+      margin-right: 10px;
+    }
+    
+    .toast-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 5px;
+    }
+    
+    /* Enhanced error message styling */
+    .error-text {
+      color: #f44336;
+      font-size: 0.85rem;
+      margin-top: 5px;
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+      font-weight: 500;
+      padding: 5px 0;
+      transition: all 0.2s ease;
+    }
+    
+    .error-text i {
+      margin-right: 5px;
+    }
+    
+    .input-error {
+      border-color: #f44336 !important;
+      box-shadow: 0 0 0 1px rgba(244, 67, 54, 0.2) !important;
+      background-color: rgba(244, 67, 54, 0.05) !important;
+    }
+    
+    .input-error:focus {
+      border-color: #f44336 !important;
+      box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.3) !important;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast notification container -->
+  <div id="toast" class="toast">
+    <div>
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="toast-message">Error message will appear here</span>
+    </div>
+    <button class="toast-close" onclick="closeToast()">&times;</button>
+  </div>
+
+  <div class="container">
+    <!-- Left Side Image with Content -->
+    <div class="photo-section">
+      <img src="/images/signup.jpg" alt="Government Fund Allocation" class="auth-image">
+      <div class="photo-section-content">
+        <h1>Government Fund Allocation System</h1>
+        <p>Create an account to access our platform for managing and tracking government funds.</p>
+      </div>
+    </div>
+
+    <div class="form-container">
+      
+      <h2>Create Account</h2>
+      <p class="form-subtitle">Get started with the platform</p>
+      
+      <% if (locals.message) { %>
+        <div class="message error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <%= message %>
+        </div>
+      <% } else { %>
+        <div class="message info-message">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            <strong>Note:</strong> After registration, you'll need to verify your email with a verification code.
+            Please provide a valid email address.
+          </div>
+        </div>
+      <% } %>
+      
+      <form action="/signup" method="POST" id="signupForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter your full name" required autocomplete="name">
+            <div class="error-text" id="nameError"><i class="fas fa-exclamation-circle"></i> Please enter your full name</div>
+          </div>
+        
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email address" required autocomplete="email">
+            <div class="error-text" id="emailError"><i class="fas fa-exclamation-circle"></i> Please enter a valid email address</div>
+          </div>
+        
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" required autocomplete="tel">
+            <div class="error-text" id="phoneError"><i class="fas fa-exclamation-circle"></i> Please enter a valid phone number (10-15 digits)</div>
+          </div>
+        
+          <div class="form-group">
+            <label for="role">Role</label>
+            <select id="role" name="role" required>
+              <option value="" disabled selected>Select your role</option>
+              <option value="Minister">Minister</option>
+              <option value="Government Official">Government Official</option>
+              <option value="Public">Public</option>
+              <option value="Admin">Admin</option>
+            </select>
+            <div class="error-text" id="roleError"><i class="fas fa-exclamation-circle"></i> Please select a role</div>
+          </div>
+        </div>
+      
+        <div class="form-group password-group">
+          <label for="password">Password</label>
+          <div class="password-container">
+            <input type="password" id="password" name="password" placeholder="Create a strong password" required>
+            <i class="toggle-password fas fa-eye" id="toggle-password"></i>
+          </div>
+          <div class="password-strength"></div>
+          <div class="strength-text"></div>
+          <div class="password-requirements">
+            <div class="requirement" id="length"><i class="fas fa-circle"></i> At least 8 characters</div>
+            <div class="requirement" id="letter"><i class="fas fa-circle"></i> At least one letter</div>
+            <div class="requirement" id="number"><i class="fas fa-circle"></i> At least one number</div>
+          </div>
+          <div class="error-text" id="passwordError"><i class="fas fa-exclamation-circle"></i> Password must be at least 8 characters long</div>
+        </div>
+      
+        <button type="submit" class="submit-btn" id="submitBtn">Create Account</button>
+        
+        <div class="loading-spinner" style="display: none; text-align: center; margin-top: 1rem;">
+          <i class="fas fa-spinner fa-spin"></i> Creating your account...
+        </div>
+        
+        <div class="links-container">
+          Already have an account? <a href="/login">Sign in</a>
+        </div>
+      </form>      
+    </div>
+  </div>
+
+  <script>
+    // Function to show toast notification
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      
+      toastMessage.textContent = message;
+      toast.classList.add('show');
+      
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        closeToast();
+      }, 3000);
+    }
+    
+    // Function to close toast
+    function closeToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.remove('show');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('signupForm');
+      const nameInput = document.getElementById('name');
+      const emailInput = document.getElementById('email');
+      const phoneInput = document.getElementById('phone');
+      const roleSelect = document.getElementById('role');
+      const passwordInput = document.getElementById('password');
+      const togglePassword = document.getElementById('toggle-password');
+      const passwordStrength = document.querySelector('.password-strength');
+      const strengthText = document.querySelector('.strength-text');
+      const submitBtn = document.getElementById('submitBtn');
+      const loadingSpinner = document.querySelector('.loading-spinner');
+      
+      // Toggle password visibility
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+      });
+      
+      // Format phone number as user types
+      phoneInput.addEventListener('input', function(e) {
+        // Remove all non-digits
+        let input = this.value.replace(/\D/g, '');
+        
+        // Limit to 15 digits
+        if (input.length > 15) {
+          input = input.substring(0, 15);
+        }
+        
+        this.value = input;
+      });
+      
+      // Password strength checker with improved UI feedback
+      passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        const lengthRequirement = document.getElementById('length');
+        const letterRequirement = document.getElementById('letter');
+        const numberRequirement = document.getElementById('number');
+        
+        // Check requirements
+        const hasLength = password.length >= 8;
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
+        
+        // Update requirement indicators
+        updateRequirement(lengthRequirement, hasLength);
+        updateRequirement(letterRequirement, hasLetter);
+        updateRequirement(numberRequirement, hasNumber);
+        
+        // Calculate strength
+        let strength = 0;
+        if (hasLength) strength += 1;
+        if (hasLetter) strength += 1;
+        if (hasNumber) strength += 1;
+        if (hasSpecial) strength += 1;
+        if (password.length > 12) strength += 1;
+        
+        // Update strength indicator
+        updateStrengthIndicator(password, strength);
+        
+        // Real-time validation
+        validatePasswordField();
+      });
+      
+      function updateRequirement(element, isValid) {
+        element.className = isValid ? 'requirement valid' : 'requirement invalid';
+        element.querySelector('i').className = isValid ? 'fas fa-check-circle' : 'fas fa-circle';
+      }
+      
+      function updateStrengthIndicator(password, strength) {
+        if (password.length === 0) {
+          passwordStrength.style.width = '0';
+          passwordStrength.style.backgroundColor = '#ddd';
+          strengthText.textContent = '';
+          return;
+        }
+        
+        let width, color, text;
+        
+        if (strength < 2) {
+          width = '25%';
+          color = 'var(--error-color)';
+          text = 'Weak';
+        } else if (strength === 2) {
+          width = '50%';
+          color = 'var(--warning-color)';
+          text = 'Fair';
+        } else if (strength === 3) {
+          width = '75%';
+          color = 'var(--success-color)';
+          text = 'Good';
+        } else {
+          width = '100%';
+          color = 'var(--success-dark)';
+          text = 'Strong';
+        }
+        
+        passwordStrength.style.width = width;
+        passwordStrength.style.backgroundColor = color;
+        strengthText.textContent = 'Password Strength: ' + text;
+        strengthText.style.color = color;
+      }
+      
+      // Form validation with improved feedback
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate all fields
+        const isNameValid = validateNameField();
+        const isEmailValid = validateEmailField();
+        const isPhoneValid = validatePhoneField();
+        const isRoleValid = validateRoleField();
+        const isPasswordValid = validatePasswordField();
+        
+        let errorMessages = [];
+        if (!isNameValid) errorMessages.push('Please enter your full name');
+        if (!isEmailValid) errorMessages.push('Please enter a valid email address');
+        if (!isPhoneValid) errorMessages.push('Please enter a valid phone number');
+        if (!isRoleValid) errorMessages.push('Please select a role');
+        if (!isPasswordValid) errorMessages.push('Please enter a valid password');
+        
+        if (isNameValid && isEmailValid && isPhoneValid && isRoleValid && isPasswordValid) {
+          // Show loading spinner and disable button
+          submitBtn.disabled = true;
+          loadingSpinner.style.display = 'block';
+          
+          // Submit the form after a short delay
+          setTimeout(() => {
+            form.submit();
+          }, 100);
+        } else {
+          // Shake the submit button to indicate error
+          submitBtn.classList.add('shake');
+          setTimeout(() => {
+            submitBtn.classList.remove('shake');
+          }, 500);
+          
+          // Show toast notification with the first error message
+          if (errorMessages.length > 0) {
+            showToast(errorMessages[0]);
+          }
+          
+          // Focus the first invalid field
+          if (!isNameValid) nameInput.focus();
+          else if (!isEmailValid) emailInput.focus();
+          else if (!isPhoneValid) phoneInput.focus();
+          else if (!isRoleValid) roleSelect.focus();
+          else if (!isPasswordValid) passwordInput.focus();
+        }
+      });
+      
+      // Field validation functions with improved error messages
+      function validateNameField() {
+        const nameError = document.getElementById('nameError');
+        const name = nameInput.value.trim();
+        
+        if (name === '') {
+          nameInput.classList.add('input-error');
+          nameError.textContent = 'Please enter your full name';
+          nameError.style.display = 'block';
+          return false;
+        } else if (name.length < 3) {
+          nameInput.classList.add('input-error');
+          nameError.textContent = 'Name must be at least 3 characters';
+          nameError.style.display = 'block';
+          return false;
+        } else {
+          nameInput.classList.remove('input-error');
+          nameError.style.display = 'none';
+          return true;
+        }
+      }
+      
+      function validateEmailField() {
+        const emailError = document.getElementById('emailError');
+        const email = emailInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email === '') {
+          emailInput.classList.add('input-error');
+          emailError.textContent = 'Please enter your email address';
+          emailError.style.display = 'block';
+          return false;
+        } else if (!emailRegex.test(email)) {
+          emailInput.classList.add('input-error');
+          emailError.textContent = 'Please enter a valid email address';
+          emailError.style.display = 'block';
+          return false;
+        } else {
+          emailInput.classList.remove('input-error');
+          emailError.style.display = 'none';
+          return true;
+        }
+      }
+      
+      function validatePhoneField() {
+        const phoneError = document.getElementById('phoneError');
+        const phone = phoneInput.value.trim();
+        
+        if (phone === '') {
+          phoneInput.classList.add('input-error');
+          phoneError.textContent = 'Please enter your phone number';
+          phoneError.style.display = 'block';
+          return false;
+        } else if (phone.length < 10) {
+          phoneInput.classList.add('input-error');
+          phoneError.textContent = 'Phone number must be at least 10 digits';
+          phoneError.style.display = 'block';
+          return false;
+        } else {
+          phoneInput.classList.remove('input-error');
+          phoneError.style.display = 'none';
+          return true;
+        }
+      }
+      
+      function validateRoleField() {
+        const roleError = document.getElementById('roleError');
+        
+        if (roleSelect.value === '') {
+          roleSelect.classList.add('input-error');
+          roleError.style.display = 'block';
+          return false;
+        } else {
+          roleSelect.classList.remove('input-error');
+          roleError.style.display = 'none';
+          return true;
+        }
+      }
+      
+      function validatePasswordField() {
+        const passwordError = document.getElementById('passwordError');
+        const password = passwordInput.value;
+        
+        // Check requirements
+        const hasLength = password.length >= 8;
+        const hasLetter = /[a-zA-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        
+        if (password === '') {
+          passwordInput.classList.add('input-error');
+          passwordError.textContent = 'Please enter a password';
+          passwordError.style.display = 'block';
+          return false;
+        } else if (!hasLength) {
+          passwordInput.classList.add('input-error');
+          passwordError.textContent = 'Password must be at least 8 characters long';
+          passwordError.style.display = 'block';
+          return false;
+        } else if (!hasLetter) {
+          passwordInput.classList.add('input-error');
+          passwordError.textContent = 'Password must contain at least one letter';
+          passwordError.style.display = 'block';
+          return false;
+        } else if (!hasNumber) {
+          passwordInput.classList.add('input-error');
+          passwordError.textContent = 'Password must contain at least one number';
+          passwordError.style.display = 'block';
+          return false;
+        } else {
+          passwordInput.classList.remove('input-error');
+          passwordError.style.display = 'none';
+          return true;
+        }
+      }
+      
+      // Real-time validation
+      nameInput.addEventListener('input', function() {
+        if (this.value.trim().length >= 3) {
+          this.classList.remove('input-error');
+          document.getElementById('nameError').style.display = 'none';
+        }
+      });
+      
+      emailInput.addEventListener('input', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(this.value)) {
+          this.classList.remove('input-error');
+          document.getElementById('emailError').style.display = 'none';
+        }
+      });
+      
+      roleSelect.addEventListener('change', function() {
+        if (this.value !== '') {
+          this.classList.remove('input-error');
+          document.getElementById('roleError').style.display = 'none';
+        }
+      });
+      
+      // We've already added the shake animation in the style tag
+    });
+  </script>
+</body>
+</html>
